@@ -1,0 +1,32 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f0f4f8;
+    padding: 20px;
+}
+
+h1 {
+    margin-bottom: 10px;
+    color: #333;
+}
+
+#cityCanvas {
+    border: 2px solid #333;
+    background-color: #fff;
+    margin-bottom: 20px;
+    cursor: pointer;
+}
+
+#controls button {
+    margin: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#result {
+    font-weight: bold;
+    font-size: 18px;
+    color: #0066cc;
+    margin-top: 10px;
+}
