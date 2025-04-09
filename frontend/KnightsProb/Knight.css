@@ -1,0 +1,25 @@
+#board {
+    display: grid;
+    grid-template-columns: repeat(8, 60px);  /* Create 8 columns, each 60px wide */
+    grid-gap: 2px;  /* Add a small gap between cells */
+    margin-top: 20px;
+}
+
+.cell {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.white {
+    background-color: #eee;  /* White cells */
+}
+
+.black {
+    background-color: #444;  /* Black cells */
+    color: white;
+}
