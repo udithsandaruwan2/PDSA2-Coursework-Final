@@ -1,19 +1,25 @@
+<!-- frontend/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Knight's Tour Game</title>
-    <link rel="stylesheet" href="../Knightsprob/Knight.css">
+  <meta charset="UTF-8">
+  <title>Knight's Tour Game</title>
+  <link rel="stylesheet" href="./Knightsprob/Knight.css">
 </head>
 <body>
-    <h1>Knight's Tour Game</h1>
+  <h1>Knight's Tour Game</h1>
 
-    <div id="board"></div>
+  <button id="startBtn">Start Game</button>
+  <div id="board" class="chessboard"></div>
 
-    <button onclick="startKnightTour()">Start Game</button>
+  <div id="status" class="status"></div>
 
-    <div id="result"></div>
+  <div id="winForm" style="display:none;">
+    <p>🎉 You won! Enter your name:</p>
+    <input type="text" id="playerName" placeholder="Your Name">
+    <button onclick="submitWin()">Submit</button>
+  </div>
 
-    <script src="../Knightsprob/Knight.js"></script>
+  <script src="../Knightsprob/Knight.js"></script>
 </body>
 </html>

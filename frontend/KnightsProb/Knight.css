@@ -1,25 +1,44 @@
-#board {
+/* frontend/style.css */
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 20px;
+    background-color: #f0f0f0;
+  }
+  
+  .chessboard {
+    width: 400px;
+    height: 400px;
     display: grid;
-    grid-template-columns: repeat(8, 60px);  /* Create 8 columns, each 60px wide */
-    grid-gap: 2px;  /* Add a small gap between cells */
-    margin-top: 20px;
-}
-
-.cell {
-    width: 60px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 20px;
-}
-
-.white {
-    background-color: #eee;  /* White cells */
-}
-
-.black {
-    background-color: #444;  /* Black cells */
+    grid-template-columns: repeat(8, 1fr);
+    margin: 20px auto;
+    border: 2px solid #333;
+  }
+  
+  .square {
+    width: 50px;
+    height: 50px;
+    line-height: 50px;
+    font-size: 24px;
+    cursor: pointer;
+  }
+  
+  .white {
+    background-color: #eee;
+  }
+  
+  .black {
+    background-color: #555;
     color: white;
-}
+  }
+  
+  .square.visited {
+    background-color: #4caf50;
+    color: white;
+  }
+  
+  .status {
+    font-size: 18px;
+    margin-top: 10px;
+  }
+  
