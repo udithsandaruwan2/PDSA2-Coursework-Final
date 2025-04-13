@@ -1,6 +1,25 @@
 # backend/KnightProbBackend/KnightTour.py
 import random
 
+
+
+
+def get_valid_moves(current_pos, selected_path):
+    x, y = current_pos
+    possible_moves = [
+        (x + 2, y + 1), (x + 1, y + 2), (x - 1, y + 2), (x - 2, y + 1),
+        (x - 2, y - 1), (x - 1, y - 2), (x + 1, y - 2), (x + 2, y - 1)
+    ]
+
+    valid_moves = [
+        (nx, ny) for nx, ny in possible_moves
+        if 0 <= nx < 8 and 0 <= ny < 8 and (nx, ny) not in selected_path
+    ]
+
+    return valid_moves
+
+
+
 N = 8
 
 # All possible knight moves

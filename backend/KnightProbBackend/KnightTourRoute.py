@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 import random
+from KnightProbBackend.KnightTour import get_valid_moves  # <-- import the logic
 
 knight_blueprint = Blueprint('knight', __name__, url_prefix='/api')
 
@@ -26,3 +27,13 @@ def validate_path():
         visited.add((x1, y1))
 
     return jsonify({"valid": True})
+
+# 🔁 NEW API: For calculating valid moves from Python logic
+@knight_blueprint.route('/valid-moves', methods=['POST'])
+def valid_moves():
+    data = request.get_json()
+    current_pos = tuple(data.get('currentPos', []))
+    selected_path = [tuple(p) for p in data.get('selectedPath', [])]
+
+    moves = get_valid_moves(current_pos, selected_path)
+    return jsonify({"validMoves": moves})
