@@ -1,4 +1,4 @@
- # backend/KnightProbBackend/KnightTour.py
+# backend/KnightProbBackend/KnightTour.py
 import random
 
 N = 8
@@ -7,40 +7,52 @@ N = 8
 move_x = [2, 1, -1, -2, -2, -1, 1, 2]
 move_y = [1, 2, 2, 1, -1, -2, -2, -1]
 
+# Shared state (resets when a new game starts)
+board = [[-1 for _ in range(N)] for _ in range(N)]
+path = []
+current_move = 0
+
 def is_valid(x, y, board):
     return 0 <= x < N and 0 <= y < N and board[x][y] == -1
 
-# -----------------------
-# Backtracking Algorithm
-# -----------------------
-def solve_knight_tour_backtracking(start_x, start_y):
+# ----------------------------
+# Start the Knight's Tour Game
+# ----------------------------
+def start_knight_tour(start_x, start_y):
+    global board, path, current_move
     board = [[-1 for _ in range(N)] for _ in range(N)]
-    board[start_x][start_y] = 0
     path = [(start_x, start_y)]
+    board[start_x][start_y] = 0
+    current_move = 1
+    return {"status": "started", "position": (start_x, start_y)}
 
-    if not backtrack(board, start_x, start_y, 1, path):
-        return None
-    return path
+# ----------------------------
+# Handle Manual Move
+# ----------------------------
+def user_move(next_x, next_y):
+    global board, path, current_move
+    if not path:
+        return {"status": "error", "reason": "Game not started yet"}
 
-def backtrack(board, curr_x, curr_y, move_i, path):
-    if move_i == N * N:
-        return True
+    last_x, last_y = path[-1]
+    dx = abs(next_x - last_x)
+    dy = abs(next_y - last_y)
 
-    for k in range(8):
-        next_x = curr_x + move_x[k]
-        next_y = curr_y + move_y[k]
-        if is_valid(next_x, next_y, board):
-            board[next_x][next_y] = move_i
-            path.append((next_x, next_y))
+    # Check if move is a valid knight move and unvisited
+    valid_moves = list(zip(move_x, move_y))
+    if is_valid(next_x, next_y, board) and (dx, dy) in valid_moves:
+        board[next_x][next_y] = current_move
+        path.append((next_x, next_y))
+        current_move += 1
 
-            if backtrack(board, next_x, next_y, move_i + 1, path):
-                return True
+        # Check if completed
+        if current_move == N * N:
+            return {"status": "completed", "path": path}
+        
+        return {"status": "moved", "path": path, "move_count": current_move}
+    else:
+        return {"status": "invalid", "reason": "Illegal move or already visited", "last_position": (last_x, last_y)}
 
-            # Backtrack
-            board[next_x][next_y] = -1
-            path.pop()
-
-    return False
 
 # -----------------------
 # Warnsdorff's Heuristic

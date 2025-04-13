@@ -1,4 +1,3 @@
-<!-- frontend/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,18 +6,10 @@
   <link rel="stylesheet" href="./Knightsprob/Knight.css">
 </head>
 <body>
-  <h1>Knight's Tour Game</h1>
-
-  <button id="startBtn">Start Game</button>
+  <h1>Knight's Tour Problem</h1>
+  <button onclick="startGame()">Start Game</button>
   <div id="board" class="chessboard"></div>
-
-  <div id="status" class="status"></div>
-
-  <div id="winForm" style="display:none;">
-    <p>🎉 You won! Enter your name:</p>
-    <input type="text" id="playerName" placeholder="Your Name">
-    <button onclick="submitWin()">Submit</button>
-  </div>
+  <p id="status"></p>
 
   <script src="../Knightsprob/Knight.js"></script>
 </body>

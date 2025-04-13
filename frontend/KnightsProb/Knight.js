@@ -1,100 +1,103 @@
-// frontend/script.js
-const board = document.getElementById("board");
-const statusDiv = document.getElementById("status");
+let selectedPath = [];
+let startPosition = null;
 
-let knightPos = null;
-let visited = [];
-let moveCount = 0;
+function startGame() {
+  fetch('http://localhost:5000/api/start')
+    .then(res => res.json())
+    .then(data => {
+      const pos = data.start;
+      startPosition = [pos.x, pos.y];
+      selectedPath = [startPosition];
+      drawBoard(startPosition);
+      document.getElementById('status').innerText = `Knight starts at (${pos.x}, ${pos.y})`;
+    });
+}
 
-// Build 8x8 board
-function drawBoard() {
-  board.innerHTML = "";
-  for (let i = 0; i < 8; i++) {
-    for (let j = 0; j < 8; j++) {
-      const square = document.createElement("div");
-      square.className = `square ${ (i + j) % 2 === 0 ? "white" : "black" }`;
-      square.dataset.row = i;
-      square.dataset.col = j;
-      square.onclick = () => handleMove(i, j, square);
+function drawBoard(currentPos) {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+
+  const validMoves = getValidMoves(currentPos);
+
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const square = document.createElement('div');
+      square.classList.add('square');
+      square.classList.add((row + col) % 2 === 0 ? 'white' : 'black');
+      square.dataset.row = row;
+      square.dataset.col = col;
+
+      if (row === currentPos[0] && col === currentPos[1]) {
+        square.classList.add('start');
+        square.innerText = '♞';
+      } else if (selectedPath.some(p => p[0] === row && p[1] === col)) {
+        square.classList.add('selected');
+        square.innerText = selectedPath.findIndex(p => p[0] === row && p[1] === col);
+      } else if (validMoves.some(m => m[0] === row && m[1] === col)) {
+        square.classList.add('valid-move');
+      }
+
+      square.onclick = () => selectMove(row, col);
       board.appendChild(square);
     }
   }
 }
 
-// Randomly start knight
-function startGame() {
-  drawBoard();
-  visited = [];
-  moveCount = 1;
-  const row = Math.floor(Math.random() * 8);
-  const col = Math.floor(Math.random() * 8);
-  knightPos = [row, col];
-  markVisited(row, col);
-  statusDiv.innerText = `Knight starts at (${row}, ${col})`;
-  document.getElementById("winForm").style.display = "none";
+function getValidMoves([x, y]) {
+  const moves = [
+    [x+2, y+1], [x+1, y+2], [x-1, y+2], [x-2, y+1],
+    [x-2, y-1], [x-1, y-2], [x+1, y-2], [x+2, y-1]
+  ];
+
+  return moves.filter(([nx, ny]) =>
+    nx >= 0 && nx < 8 && ny >= 0 && ny < 8 &&
+    !selectedPath.some(p => p[0] === nx && p[1] === ny)
+  );
 }
 
-function markVisited(row, col) {
-  visited.push(`${row},${col}`);
-  const square = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
-  if (square) {
-    square.classList.add("visited");
-    square.innerText = moveCount;
-  }
-}
+function selectMove(row, col) {
+  const last = selectedPath[selectedPath.length - 1];
+  const dx = Math.abs(last[0] - row);
+  const dy = Math.abs(last[1] - col);
+  const isKnightMove = (dx === 2 && dy === 1) || (dx === 1 && dy === 2);
 
-function isValidKnightMove(fromRow, fromCol, toRow, toCol) {
-  const dx = Math.abs(fromRow - toRow);
-  const dy = Math.abs(fromCol - toCol);
-  return (dx === 2 && dy === 1) || (dx === 1 && dy === 2);
-}
-
-function handleMove(row, col, square) {
-  if (!knightPos) return;
-  const [currentRow, currentCol] = knightPos;
-  if (!isValidKnightMove(currentRow, currentCol, row, col)) {
-    statusDiv.innerText = "❌ Invalid knight move!";
+  if (!isKnightMove || selectedPath.some(p => p[0] === row && p[1] === col)) {
+    document.getElementById('status').innerText = "Invalid move!";
     return;
   }
 
-  const key = `${row},${col}`;
-  if (visited.includes(key)) {
-    statusDiv.innerText = "⚠️ Already visited!";
+  selectedPath.push([row, col]);
+  drawBoard([row, col]);
+
+  if (selectedPath.length === 64) {
+    submitPath();
     return;
   }
 
-  knightPos = [row, col];
-  moveCount++;
-  markVisited(row, col);
-
-  if (visited.length === 64) {
-    statusDiv.innerText = "🎉 All squares visited! You win!";
-    document.getElementById("winForm").style.display = "block";
+  const nextValidMoves = getValidMoves([row, col]);
+  if (nextValidMoves.length === 0) {
+    const tryUndo = confirm("You're stuck! Want to undo your last move and try again?");
+    if (tryUndo) {
+      selectedPath.pop(); // remove last move
+      drawBoard(selectedPath[selectedPath.length - 1]); // redraw from previous
+    } else {
+      document.getElementById('status').innerText = "❌ You're stuck! Game Over.";
+    }
   }
 }
 
-function submitWin() {
-  const name = document.getElementById("playerName").value;
-  if (!name) {
-    alert("Please enter a name!");
-    return;
-  }
-
-  fetch('/submit_win', {
+function submitPath() {
+  fetch('http://localhost:5000/api/validate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name: name,
-      moves: visited
-    })
-  }).then(res => {
-    if (res.ok) {
-      alert("Saved successfully!");
-      document.getElementById("winForm").style.display = "none";
+    body: JSON.stringify({ path: selectedPath })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.valid) {
+      document.getElementById('status').innerText = "✅ You Win!";
     } else {
-      alert("Error saving data!");
+      document.getElementById('status').innerText = "❌ " + data.message;
     }
   });
 }
-
-document.getElementById("startBtn").addEventListener("click", startGame);
