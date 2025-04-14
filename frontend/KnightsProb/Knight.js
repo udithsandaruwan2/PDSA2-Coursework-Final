@@ -45,8 +45,8 @@ function drawBoard(currentPos) {
 
 function getValidMoves([x, y]) {
   const moves = [
-    [x+2, y+1], [x+1, y+2], [x-1, y+2], [x-2, y+1],
-    [x-2, y-1], [x-1, y-2], [x+1, y-2], [x+2, y-1]
+    [x + 2, y + 1], [x + 1, y + 2], [x - 1, y + 2], [x - 2, y + 1],
+    [x - 2, y - 1], [x - 1, y - 2], [x + 1, y - 2], [x + 2, y - 1]
   ];
 
   return moves.filter(([nx, ny]) =>
@@ -76,14 +76,8 @@ function selectMove(row, col) {
 
   const nextValidMoves = getValidMoves([row, col]);
   if (nextValidMoves.length === 0) {
-    document.getElementById('status').innerText = "You're stuck! Submitting the path tp check whether we can backtack";
+    document.getElementById('status').innerText = "You're stuck! Submitting the path to check whether we can backtrack...";
     submitPath();
-    if (tryUndo) {
-      selectedPath.pop(); // remove last move
-      drawBoard(selectedPath[selectedPath.length - 1]); // redraw from previous
-    } else {
-      document.getElementById('status').innerText = "❌ You're stuck! Game Over.";
-    }
   }
 }
 
@@ -97,8 +91,19 @@ function submitPath() {
   .then(data => {
     if (data.valid) {
       document.getElementById('status').innerText = "✅ You Win!";
+    } else if (data.message.includes("Incomplete Tour. But you are close! A solution is still possible from here.")) {
+      const tryAgain = confirm(data.message + "\nDo you want to continue playing from here?");
+      if (tryAgain) {
+        document.getElementById('status').innerText = "🔁 Continue playing. Try to complete the tour!";
+      } else {
+        document.getElementById('status').innerText = "❌ You chose to quit. Game over.";
+      }
     } else {
       document.getElementById('status').innerText = "❌ " + data.message;
     }
+  })
+  .catch(err => {
+    console.error("Error validating path:", err);
+    document.getElementById('status').innerText = "❌ Error communicating with the server.";
   });
 }
