@@ -76,7 +76,8 @@ function selectMove(row, col) {
 
   const nextValidMoves = getValidMoves([row, col]);
   if (nextValidMoves.length === 0) {
-    const tryUndo = confirm("You're stuck! Want to undo your last move and try again?");
+    document.getElementById('status').innerText = "You're stuck! Submitting the path tp check whether we can backtack";
+    submitPath();
     if (tryUndo) {
       selectedPath.pop(); // remove last move
       drawBoard(selectedPath[selectedPath.length - 1]); // redraw from previous

@@ -1,57 +1,60 @@
-# backend/KnightProbBackend/KnightTour.py
-import random
+# KnightTour.py
 
-N = 8
+def is_valid_move(x, y, board):
+    return 0 <= x < 8 and 0 <= y < 8 and board[x][y] == -1
 
-# All possible knight moves
+def is_knight_move(p1, p2):
+    dx = abs(p1[0] - p2[0])
+    dy = abs(p1[1] - p2[1])
+    return (dx == 2 and dy == 1) or (dx == 1 and dy == 2)
+
+def validate_player_path(path):
+    if len(path) < 2 or not (1 <= len(path) <= 64):
+        return False, "Invalid path length"
+
+    visited = [[-1 for _ in range(8)] for _ in range(8)]
+    for i, (x, y) in enumerate(path):
+        if not (0 <= x < 8 and 0 <= y < 8):
+            return False, f"Invalid position at index {i}"
+        if visited[x][y] != -1:
+            return False, f"Repeated position at index {i}"
+        visited[x][y] = i
+
+    for i in range(1, len(path)):
+        if not is_knight_move(path[i-1], path[i]):
+            return False, f"Invalid knight move at index {i}"
+
+    if len(path) == 64:
+        return True, "Correct Knight's Tour! Congrats You won the games. Saving winner to Database"
+        ### Need to save winner name to the DB
+
+    # Check if a solution is still possible from last move
+    last_x, last_y = path[-1]
+    if is_tour_possible_from(last_x, last_y, visited, len(path)):
+        return False, "Incomplete Tour. But you are close! A solution is still possible from here."
+    else:
+        return False, "Incomplete Tour. YOU LOSE. Try again."
+
+
+###Backtracking algorithm to check the whehter the player can continue from where he got stucked
 move_x = [2, 1, -1, -2, -2, -1, 1, 2]
 move_y = [1, 2, 2, 1, -1, -2, -2, -1]
 
-# Shared state (resets when a new game starts)
-board = [[-1 for _ in range(N)] for _ in range(N)]
-path = []
-current_move = 0
+def is_tour_possible_from(x, y, visited, step):
+    if step == 64:
+        return True  # Full tour completed
 
-def is_valid(x, y, board):
-    return 0 <= x < N and 0 <= y < N and board[x][y] == -1
+    for i in range(8):
+        next_x = x + move_x[i]
+        next_y = y + move_y[i]
+        if is_valid_move(next_x, next_y, visited):
+            visited[next_x][next_y] = step
+            if is_tour_possible_from(next_x, next_y, visited, step + 1):
+                return True
+            visited[next_x][next_y] = -1  # Backtrack
 
-# ----------------------------
-# Start the Knight's Tour Game
-# ----------------------------
-def start_knight_tour(start_x, start_y):
-    global board, path, current_move
-    board = [[-1 for _ in range(N)] for _ in range(N)]
-    path = [(start_x, start_y)]
-    board[start_x][start_y] = 0
-    current_move = 1
-    return {"status": "started", "position": (start_x, start_y)}
+    return False
 
-# ----------------------------
-# Handle Manual Move
-# ----------------------------
-def user_move(next_x, next_y):
-    global board, path, current_move
-    if not path:
-        return {"status": "error", "reason": "Game not started yet"}
-
-    last_x, last_y = path[-1]
-    dx = abs(next_x - last_x)
-    dy = abs(next_y - last_y)
-
-    # Check if move is a valid knight move and unvisited
-    valid_moves = list(zip(move_x, move_y))
-    if is_valid(next_x, next_y, board) and (dx, dy) in valid_moves:
-        board[next_x][next_y] = current_move
-        path.append((next_x, next_y))
-        current_move += 1
-
-        # Check if completed
-        if current_move == N * N:
-            return {"status": "completed", "path": path}
-        
-        return {"status": "moved", "path": path, "move_count": current_move}
-    else:
-        return {"status": "invalid", "reason": "Illegal move or already visited", "last_position": (last_x, last_y)}
 
 
 # -----------------------
