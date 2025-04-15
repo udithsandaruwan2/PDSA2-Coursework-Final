@@ -134,7 +134,7 @@ function visualizeBacktrackingTour(startingPoint) {
   .then(data => {
     if (data.success) {
       console.log("Backtracking solution path:", data.path); // 👈 Print the path
-      //visualizeBacktrackSolution(data.path);
+      visualizeBacktrackSolution(data.path);
     } else {
       alert("No solution found from this starting point.");
     }
