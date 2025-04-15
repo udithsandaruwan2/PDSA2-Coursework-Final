@@ -1,5 +1,7 @@
 import sqlite3
 from datetime import datetime
+import time
+
 
 #  Checks if the position has not been visited yet
 def is_unvisited(x, y, visited):
@@ -90,13 +92,20 @@ def is_valid(x, y, board):
     """Check if the knight move is inside the board and unvisited"""
     return 0 <= x < N and 0 <= y < N and board[x][y] == -1
 
-def solve_knights_tour(start_x, start_y):
+import time
+
+def solve_knights_tour(start_x, start_y, time_limit=60):
+    print(start_x)
+    print(start_y)
+    start_time = time.time()
     board = [[-1 for _ in range(N)] for _ in range(N)]
     board[start_x][start_y] = 0
-
     path = [(start_x, start_y)]
 
     def backtrack(x, y, move_count):
+        if time.time() - start_time > time_limit:
+            return False  # Timeout
+
         if move_count == N * N:
             return True
 
@@ -111,7 +120,6 @@ def solve_knights_tour(start_x, start_y):
                 if backtrack(next_x, next_y, move_count + 1):
                     return True
 
-                # Backtrack
                 board[next_x][next_y] = -1
                 path.pop()
 
@@ -121,6 +129,7 @@ def solve_knights_tour(start_x, start_y):
         return path
     else:
         return None
+
 
 
 # -----------------------

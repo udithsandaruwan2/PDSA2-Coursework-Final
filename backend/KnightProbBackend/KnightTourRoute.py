@@ -46,7 +46,6 @@ def solve_from_start_position():
     except (ValueError, TypeError):
         print("Start position format error")  # 👈 Debug info
         return jsonify({"success": False, "message": "Start position must contain integers"}), 400
-    print(start_x)
     solution = solve_knights_tour(start_x, start_y)
     
     print("Backtracking solution found:", solution)  # 👈 Log output

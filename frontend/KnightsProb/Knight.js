@@ -132,7 +132,6 @@ function visualizeBacktrackingTour(startingPoint) {
   })
   .then(res => res.json())
   .then(data => {
-    console.log("Response from backend:", data); // 👈 Print the full response
     if (data.success) {
       console.log("Backtracking solution path:", data.path); // 👈 Print the path
       //visualizeBacktrackSolution(data.path);
@@ -148,28 +147,20 @@ function visualizeBacktrackingTour(startingPoint) {
 
 
 function visualizeBacktrackSolution(path) {
-  let i = 0;
+  let index = 0;
 
-  function moveKnightStep() {
-    if (i >= path.length) return;
-
-    const [x, y] = path[i];
-    const cell = document.getElementById(`cell-${x}-${y}`);
-
-    // Optional: Clear previous knight
-    document.querySelectorAll('.cell').forEach(c => c.classList.remove('knight'));
-
-    // Add knight class to current cell
-    if (cell) {
-      cell.classList.add('knight');
-      cell.innerText = i + 1; // Show step number
+  const interval = setInterval(() => {
+    if (index >= path.length) {
+      clearInterval(interval);
+      document.getElementById('status').innerText = "✅ Here's a valid Knight's Tour from your starting point!";
+      return;
     }
 
-    i++;
-    setTimeout(moveKnightStep, 300); // Change delay as needed
-  }
-
-  moveKnightStep();
+    const [row, col] = path[index];
+    selectedPath = path.slice(0, index + 1); // Update selectedPath to match progress
+    drawBoard([row, col]);
+    index++;
+  }, 300); // Delay in ms between steps (adjust speed here)
 }
 
 
