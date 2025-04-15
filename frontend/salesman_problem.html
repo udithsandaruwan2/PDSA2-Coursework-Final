@@ -13,6 +13,7 @@
         <button onclick="resetGame()">Reset</button>
         <button onclick="submitRoute()">Submit Route</button>
         <button onclick="compareWithAlgorithms()">Compare with Algorithms</button>
+        <button onclick="viewStats()">View Statistics</button>
     </div>
 
     <div id="toggles" style="display: none;">
@@ -29,6 +30,16 @@
         <p id="bfResult" style="display: none;">Brute Force Distance: N/A</p>
         <!-- Held-Karp Result -->
         <p id="hkResult" style="display: none;">Held-Karp Distance: N/A</p>
+    </div>
+
+    <!-- Add this new section to display the Home City -->
+    <div id="homeCityInfo">
+        <p id="homeCity"></p> <!-- This will display the home city info -->
+    </div>
+
+    <div id="statsResult" style="display: none;">
+        <h3>Algorithm Statistics</h3>
+        <div id="statsContent"></div>
     </div>
 
     <script src="salesman.js"></script>
