@@ -258,7 +258,10 @@ function submitRoute() {
 
     // Now calculate the distance, ensuring to include home-to-first-city and last-city-to-home
     const humanDistanceInUnits = calculateTotalDistance(fullHumanRoute);  // This should include the return to home
-    const humanDistanceInKm = humanDistanceInUnits;  // Directly in km (no scaling needed)
+    const humanDistanceInKm = humanDistanceInUnits / 10;  // Directly in km (no scaling needed)
+
+    console.log(`Full Human Route:`, fullHumanRoute);  // Log the full human route for debugging
+    console.log(`Human Distance:`, humanDistanceInKm);
 
     document.getElementById("humanResult").innerText = `Human Distance: ${humanDistanceInKm.toFixed(2)} km`;
 
@@ -271,6 +274,7 @@ function submitRoute() {
     drawCities(); // Redraw the cities and the final path
 }
 
+// Function to compare with algorithms
 function compareWithAlgorithms() {
     console.log("Compare with Algorithms clicked");
 
@@ -280,19 +284,23 @@ function compareWithAlgorithms() {
         return;
     }
 
-    // Prepare the cities array for backend: only send user-selected cities
-    const citiesForBackend = playerRoute.map(city => ({
-        id: city.id,
-        x: city.x,
-        y: city.y
-    }));
+    // Prepare the cities array for backend: include home city and user-selected cities
+    const homeCityObj = cities[homeCityIndex];
+    const selectedCityIds = playerRoute.map(city => city.id);
+    const selectedCities = cities.filter(city => selectedCityIds.includes(city.id));
+    const citiesForBackend = [homeCityObj, ...selectedCities];
+    // Remove duplicates (in case home city is also in selectedCities)
+    const uniqueCities = Array.from(new Map(citiesForBackend.map(c => [c.id, c])).values());
+
+    // Log the selected cities for debugging
+    console.log("Selected Cities for Algorithms (with home):", uniqueCities);
 
     try {
         const requestData = {
-            cities: citiesForBackend,  // Send only user-selected cities
+            cities: uniqueCities,  // Send home city + user-selected cities
             player_name: playerName,
-            home_city: cities[homeCityIndex].id, // Send the home city ID (int)
-            human_route: playerRoute.map(city => city.id)  // Pass selected city IDs as human_route
+            home_city: homeCityObj.id, // Send the home city ID (int)
+            human_route: selectedCityIds  // Pass selected city IDs as human_route
         };
         console.log("Data being sent to the backend:", requestData);
 
@@ -318,7 +326,7 @@ function compareWithAlgorithms() {
 
             // Process results and display them
             document.getElementById("toggles").style.display = "block";
-            
+
             if (data.nearest_neighbor && !data.nearest_neighbor.error) {
                 console.log("Nearest Neighbor result:", data.nearest_neighbor);  // Log the Nearest Neighbor result
                 nnRoute = JSON.parse(data.nearest_neighbor.route);  // Parse route if it's JSON
