@@ -94,12 +94,25 @@ function submitPath() {
     } else if (data.message.includes("Incomplete Tour. But you are close! A solution is still possible from here.")) {
       const tryAgain = confirm(data.message + "\nDo you want to continue playing from here?");
       if (tryAgain) {
-        document.getElementById('status').innerText = "🔁 Continue playing. Try to complete the tour!";
+          // Backtrack one move
+          selectedPath.pop();
+          // Get the new last position
+          const lastPos = selectedPath[selectedPath.length - 1];
+          // Redraw the board from the new position
+          drawBoard(lastPos);
       } else {
         document.getElementById('status').innerText = "❌ You chose to quit. Game over.";
       }
     } else {
       document.getElementById('status').innerText = "❌ " + data.message;
+      // in here we can call the fucntion ti visualize
+      
+      // Get the same starting point that user got
+      const startingPoint = selectedPath[0];
+
+      // Call the function to visualize a full Knight's Tour from startingPoint
+      visualizeBacktrackingTour(startingPoint);
+      
     }
   })
   .catch(err => {
@@ -107,3 +120,56 @@ function submitPath() {
     document.getElementById('status').innerText = "❌ Error communicating with the server.";
   });
 }
+
+
+function visualizeBacktrackingTour(startingPoint) {
+  console.log("Sending starting point to backend:", startingPoint);
+
+  fetch('http://localhost:5000/api/solve', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: [startingPoint] })
+  })
+  .then(res => res.json())
+  .then(data => {
+    console.log("Response from backend:", data); // 👈 Print the full response
+    if (data.success) {
+      console.log("Backtracking solution path:", data.path); // 👈 Print the path
+      visualizeBacktrackSolution(data.path);
+    } else {
+      alert("No solution found from this starting point.");
+    }
+  })
+  .catch(err => {
+    console.error("Error reaching the backend:", err);
+    alert("Failed to reach the server.");
+  });
+}
+
+
+function visualizeBacktrackSolution(path) {
+  let i = 0;
+
+  function moveKnightStep() {
+    if (i >= path.length) return;
+
+    const [x, y] = path[i];
+    const cell = document.getElementById(`cell-${x}-${y}`);
+
+    // Optional: Clear previous knight
+    document.querySelectorAll('.cell').forEach(c => c.classList.remove('knight'));
+
+    // Add knight class to current cell
+    if (cell) {
+      cell.classList.add('knight');
+      cell.innerText = i + 1; // Show step number
+    }
+
+    i++;
+    setTimeout(moveKnightStep, 300); // Change delay as needed
+  }
+
+  moveKnightStep();
+}
+
+

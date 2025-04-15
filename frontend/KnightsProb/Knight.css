@@ -25,6 +25,14 @@ body {
   justify-content: center;
 }
 
+.knight {
+  background-color: gold;
+  font-weight: bold;
+  color: black;
+}
+
+
+
 .white { background-color: #f0d9b5; }
 .black { background-color: #b58863; }
 .selected { background-color: #90ee90 !important; }
