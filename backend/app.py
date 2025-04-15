@@ -9,7 +9,7 @@ app = Flask(__name__, static_folder='../frontend')
 CORS(app)  # enable CORS for all routes
 
 # Register the knight route blueprint
-app.register_blueprint(knight_blueprint)  # ✅ ADD THIS LINE
+app.register_blueprint(knight_blueprint)  
 
 # Serve the main home.html page
 @app.route('/')

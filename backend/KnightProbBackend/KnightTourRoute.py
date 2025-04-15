@@ -25,22 +25,31 @@ def validate_path():
     except Exception as e:
         return jsonify({"valid": False, "message": str(e)}), 500
 
+
+
+
+#Backtrack Visualization
+
 @knight_blueprint.route('/solve', methods=['POST'])
 def solve_from_start_position():
     data = request.get_json()
+    print("Received solve request with data:", data)  # 👈 Log input
+
     path = data.get('path')
 
-    # Validate input
     if not path or len(path) == 0 or not isinstance(path[0], list) or len(path[0]) != 2:
+        print("Invalid or missing start position")  # 👈 Debug info
         return jsonify({"success": False, "message": "Invalid or missing start position"}), 400
 
     try:
         start_x, start_y = int(path[0][0]), int(path[0][1])
     except (ValueError, TypeError):
+        print("Start position format error")  # 👈 Debug info
         return jsonify({"success": False, "message": "Start position must contain integers"}), 400
-
-    # Solve using backtracking
+    print(start_x)
     solution = solve_knights_tour(start_x, start_y)
+    
+    print("Backtracking solution found:", solution)  # 👈 Log output
 
     if solution:
         return jsonify({"success": True, "path": solution})

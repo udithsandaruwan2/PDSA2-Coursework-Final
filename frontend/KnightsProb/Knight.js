@@ -125,7 +125,7 @@ function submitPath() {
 function visualizeBacktrackingTour(startingPoint) {
   console.log("Sending starting point to backend:", startingPoint);
 
-  fetch('http://localhost:5000/api/solve', {
+  fetch('http://127.0.0.1:5000/api/solve', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path: [startingPoint] })
@@ -135,7 +135,7 @@ function visualizeBacktrackingTour(startingPoint) {
     console.log("Response from backend:", data); // 👈 Print the full response
     if (data.success) {
       console.log("Backtracking solution path:", data.path); // 👈 Print the path
-      visualizeBacktrackSolution(data.path);
+      //visualizeBacktrackSolution(data.path);
     } else {
       alert("No solution found from this starting point.");
     }
