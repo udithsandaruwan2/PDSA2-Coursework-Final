@@ -280,8 +280,8 @@ function compareWithAlgorithms() {
         return;
     }
 
-    // Prepare the cities array for backend: must include 'id', 'x', 'y' for each city
-    const citiesForBackend = cities.map(city => ({
+    // Prepare the cities array for backend: only send user-selected cities
+    const citiesForBackend = playerRoute.map(city => ({
         id: city.id,
         x: city.x,
         y: city.y
@@ -289,10 +289,10 @@ function compareWithAlgorithms() {
 
     try {
         const requestData = {
-            cities: citiesForBackend,
+            cities: citiesForBackend,  // Send only user-selected cities
             player_name: playerName,
             home_city: cities[homeCityIndex].id, // Send the home city ID (int)
-            human_route: playerRoute.map(city => city.id)
+            human_route: playerRoute.map(city => city.id)  // Pass selected city IDs as human_route
         };
         console.log("Data being sent to the backend:", requestData);
 
@@ -357,6 +357,7 @@ function compareWithAlgorithms() {
         alert('Error comparing algorithms. Check the console for more details.');
     }
 }
+
 
 
 // Nearest Neighbour Algorithm

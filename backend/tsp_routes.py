@@ -134,7 +134,7 @@ def solve_tsp():
         data = request.json
         logger.debug(f"Received request data: {data}")  # Log the received data
         
-        cities = data.get('cities')
+        cities = data.get('cities')  # Full list of cities
         player_name = data.get('player_name', 'Anonymous')
         home_city = data.get('home_city', 'Unknown')
         human_route = data.get('human_route', [])
@@ -143,55 +143,24 @@ def solve_tsp():
             logger.error("No cities provided in the request!")
             return jsonify({'error': 'No cities provided'}), 400
 
-        logger.info(f"Processing cities: {cities}")  # Log the cities being processed
+        # Get only the user-selected cities from human_route
+        selected_cities = [city for city in cities if city['id'] in human_route]
+        
+        if not selected_cities:
+            logger.error("No selected cities provided in human_route!")
+            return jsonify({'error': 'No selected cities provided'}), 400
 
-        # Perform TSP calculations
-        nn_path, nn_distance, nn_time = tsp_nearest_neighbor(cities)
-        bf_path, bf_distance, bf_time = tsp_brute_force(cities)
-        hk_path, hk_distance, hk_time = tsp_held_karp(cities)
+        # Perform TSP calculations only on selected cities
+        nn_path, nn_distance, nn_time = tsp_nearest_neighbor(selected_cities)
+        bf_path, bf_distance, bf_time = tsp_brute_force(selected_cities)
+        hk_path, hk_distance, hk_time = tsp_held_karp(selected_cities)
 
         # Log the results
         logger.debug(f"Nearest Neighbor Result: {nn_path}, {nn_distance}, {nn_time}")
         logger.debug(f"Brute Force Result: {bf_path}, {bf_distance}, {bf_time}")
         logger.debug(f"Held-Karp Result: {hk_path}, {hk_distance}, {hk_time}")
 
-        # Find the home city object by ID (should be int)
-        home_city_id = data.get('home_city')
-        id_to_city = {city['id']: city for city in cities}
-        if isinstance(home_city_id, int) and home_city_id in id_to_city:
-            home_city_obj = id_to_city[home_city_id]
-        else:
-            home_city_obj = cities[0]  # fallback to first city
-
-        # Defensive: ensure human_route is a list of city IDs (ints)
-        if not isinstance(human_route, list):
-            logger.error(f"human_route is not a list: {human_route}")
-            return jsonify({'error': 'human_route must be a list of city IDs'}), 400
-
-        # Convert human_route (list of IDs) to city objects, skip IDs not in id_to_city
-        human_route_objs = []
-        for city_id in human_route:
-            if isinstance(city_id, dict):
-                # If a dict sneaks in, log and skip
-                logger.warning(f"Expected city ID (int) but got dict in human_route: {city_id}")
-                continue
-            city_obj = id_to_city.get(city_id)
-            if city_obj is not None:
-                human_route_objs.append(city_obj)
-            else:
-                logger.warning(f"City ID {city_id} in human_route not found in cities list!")
-
-        # Build the full human route, ensuring all are city objects
-        full_human_route = [home_city_obj] + human_route_objs + [home_city_obj]
-        for idx, city in enumerate(full_human_route):
-            if not isinstance(city, dict) or 'x' not in city or 'y' not in city:
-                logger.error(f"Element at position {idx} in full_human_route is not a valid city object: {city}")
-                return jsonify({'error': f'Invalid city object in route at position {idx}: {city}'}), 400
-
-        # Calculate the human route distance with the return to the home city
-        human_distance = total_path_distance(full_human_route)
-
-        # Return algorithm results with human distance added
+        # Prepare response with algorithm results
         response_data = {
             'nearest_neighbor': {
                 'route': json.dumps(nn_path),
@@ -209,7 +178,7 @@ def solve_tsp():
                 'time': hk_time
             },
             'human_route': {
-                'distance': human_distance  # Add human distance to the response
+                'distance': total_path_distance([cities[0]] + selected_cities + [cities[0]])  # Include home to close the loop
             }
         }
 
