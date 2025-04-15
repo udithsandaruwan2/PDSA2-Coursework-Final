@@ -155,9 +155,39 @@ def solve_tsp():
         logger.debug(f"Brute Force Result: {bf_path}, {bf_distance}, {bf_time}")
         logger.debug(f"Held-Karp Result: {hk_path}, {hk_distance}, {hk_time}")
 
-        # Build the full human route: home -> cities -> home
-        full_human_route = [cities[0], *human_route, cities[0]]
-        
+        # Find the home city object by ID (should be int)
+        home_city_id = data.get('home_city')
+        id_to_city = {city['id']: city for city in cities}
+        if isinstance(home_city_id, int) and home_city_id in id_to_city:
+            home_city_obj = id_to_city[home_city_id]
+        else:
+            home_city_obj = cities[0]  # fallback to first city
+
+        # Defensive: ensure human_route is a list of city IDs (ints)
+        if not isinstance(human_route, list):
+            logger.error(f"human_route is not a list: {human_route}")
+            return jsonify({'error': 'human_route must be a list of city IDs'}), 400
+
+        # Convert human_route (list of IDs) to city objects, skip IDs not in id_to_city
+        human_route_objs = []
+        for city_id in human_route:
+            if isinstance(city_id, dict):
+                # If a dict sneaks in, log and skip
+                logger.warning(f"Expected city ID (int) but got dict in human_route: {city_id}")
+                continue
+            city_obj = id_to_city.get(city_id)
+            if city_obj is not None:
+                human_route_objs.append(city_obj)
+            else:
+                logger.warning(f"City ID {city_id} in human_route not found in cities list!")
+
+        # Build the full human route, ensuring all are city objects
+        full_human_route = [home_city_obj] + human_route_objs + [home_city_obj]
+        for idx, city in enumerate(full_human_route):
+            if not isinstance(city, dict) or 'x' not in city or 'y' not in city:
+                logger.error(f"Element at position {idx} in full_human_route is not a valid city object: {city}")
+                return jsonify({'error': f'Invalid city object in route at position {idx}: {city}'}), 400
+
         # Calculate the human route distance with the return to the home city
         human_distance = total_path_distance(full_human_route)
 

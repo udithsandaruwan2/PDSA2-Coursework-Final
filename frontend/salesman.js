@@ -281,7 +281,7 @@ function compareWithAlgorithms() {
     }
 
     // Prepare the cities array for backend: must include 'id', 'x', 'y' for each city
-    const citiesForBackend = playerRoute.map(city => ({
+    const citiesForBackend = cities.map(city => ({
         id: city.id,
         x: city.x,
         y: city.y
@@ -291,7 +291,7 @@ function compareWithAlgorithms() {
         const requestData = {
             cities: citiesForBackend,
             player_name: playerName,
-            home_city: homeCity,
+            home_city: cities[homeCityIndex].id, // Send the home city ID (int)
             human_route: playerRoute.map(city => city.id)
         };
         console.log("Data being sent to the backend:", requestData);
