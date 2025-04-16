@@ -91,28 +91,68 @@ function submitPath() {
   .then(data => {
     if (data.valid) {
       document.getElementById('status').innerText = "✅ You Win!";
+
+      // 🔥 Prompt for name and save winner
+      const name = prompt("You won! Enter your name to save your score:");
+      const startX = selectedPath[0][0];
+      const startY = selectedPath[0][1];
+      const pathStr = JSON.stringify(selectedPath);  // Convert path to a string
+      const timestamp = new Date().toISOString();  // Current timestamp in ISO format
+
+      fetch("http://localhost:5000/api/submit_winner", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: name,
+          start_x: startX,
+          start_y: startY,
+          path: pathStr,  // Send the path as string
+          timestamp: timestamp  // Send the current timestamp
+        })
+      })
+      .then(res => res.json())
+      .then(data => alert(data.message))
+      .catch(err => console.error("Error saving winner:", err));
+
     } else if (data.message.includes("Incomplete Tour. But you are close! A solution is still possible from here.")) {
       const tryAgain = confirm(data.message + "\nDo you want to continue playing from here?");
       if (tryAgain) {
-          // Backtrack one move
           selectedPath.pop();
-          // Get the new last position
           const lastPos = selectedPath[selectedPath.length - 1];
-          // Redraw the board from the new position
           drawBoard(lastPos);
       } else {
         document.getElementById('status').innerText = "❌ You chose to quit. Game over.";
       }
     } else {
       document.getElementById('status').innerText = "❌ " + data.message;
-      // in here we can call the fucntion ti visualize
-      
-      // Get the same starting point that user got
-      const startingPoint = selectedPath[0];
 
-      // Call the function to visualize a full Knight's Tour from startingPoint
+      const startingPoint = selectedPath[0];
       visualizeBacktrackingTour(startingPoint);
-      
+      // 🔥 Prompt for name and save winner
+      const name = prompt("You won! Enter your name to save your score:");
+      const startX = selectedPath[0][0];
+      const startY = selectedPath[0][1];
+      const pathStr = JSON.stringify(selectedPath);  // Convert path to a string
+      const timestamp = new Date().toISOString();  // Current timestamp in ISO format
+
+      fetch("http://localhost:5000/api/submit_winner", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: name,
+          start_x: startX,
+          start_y: startY,
+          path: pathStr,  // Send the path as string
+          timestamp: timestamp  // Send the current timestamp
+        })
+      })
+      .then(res => res.json())
+      .then(data => alert(data.message))
+      .catch(err => console.error("Error saving winner:", err));
     }
   })
   .catch(err => {
@@ -120,6 +160,7 @@ function submitPath() {
     document.getElementById('status').innerText = "❌ Error communicating with the server.";
   });
 }
+
 
 
 function visualizeBacktrackingTour(startingPoint) {
