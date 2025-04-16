@@ -162,7 +162,6 @@ function submitPath() {
 }
 
 
-
 function visualizeBacktrackingTour(startingPoint) {
   console.log("Sending starting point to backend:", startingPoint);
 
@@ -174,10 +173,31 @@ function visualizeBacktrackingTour(startingPoint) {
   .then(res => res.json())
   .then(data => {
     if (data.success) {
-      console.log("Backtracking solution path:", data.path); // 👈 Print the path
+      console.log("✅ Backtracking solution path:", data.path);
       visualizeBacktrackSolution(data.path);
     } else {
-      alert("No solution found from this starting point.");
+      console.warn("❌ Backtracking failed. Trying Warnsdorff...");
+
+      // 🔁 Fallback to Warnsdorff’s heuristic
+      fetch('http://127.0.0.1:5000/api/warnsdorff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: [startingPoint] })
+      })
+      .then(res => res.json())
+      .then(warnData => {
+        if (warnData.success) {
+          console.log("⚡ Warnsdorff solution path:", warnData.path);
+          visualizeBacktrackSolution(warnData.path); // Reuse same visualizer
+          alert("Backtracking failed. Shown path uses Warnsdorff’s heuristic.");
+        } else {
+          alert("No solution found even with Warnsdorff.");
+        }
+      })
+      .catch(err => {
+        console.error("Error during Warnsdorff fallback:", err);
+        alert("Warnsdorff fallback failed.");
+      });
     }
   })
   .catch(err => {

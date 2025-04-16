@@ -63,26 +63,6 @@ def is_tour_possible_from(x, y, visited, step):
 
     return False
 
-# 💾 Save winner info to local DB
-"""def save_winner_to_db(name):
-    try:
-        conn = sqlite3.connect('database/winners.db')
-        cursor = conn.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS winners (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                time TEXT NOT NULL
-            )
-        ''')
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        cursor.execute("INSERT INTO winners (name, time) VALUES (?, ?)", (name, current_time))
-        conn.commit()
-        conn.close()
-        print(f"Winner {name} saved to DB successfully.")
-    except Exception as e:
-        print(f"Error saving winner to DB: {e}")"""
-
 
 ## Whole backtracking algorithm to visualize the knight tour problem using the user's current starting point
 # Board size
@@ -135,42 +115,49 @@ def solve_knights_tour(start_x, start_y, time_limit=60):
 # -----------------------
 # Warnsdorff's Heuristic
 # -----------------------
-def count_onward_moves(x, y, board):
-    count = 0
-    for i in range(8):
-        nx = x + move_x[i]
-        ny = y + move_y[i]
-        if is_valid(nx, ny, board):
-            count += 1
-    return count
+# Warnsdorff’s Rule implementation
+def warnsdorff_tour(start_x, start_y, board_size=8):
+    knight_moves = [
+        (2, 1), (1, 2), (-1, 2), (-2, 1),
+        (-2, -1), (-1, -2), (1, -2), (2, -1)
+    ]
 
-def solve_knight_tour_warnsdorff(start_x, start_y):
-    board = [[-1 for _ in range(N)] for _ in range(N)]
+    board = [[-1 for _ in range(board_size)] for _ in range(board_size)]
+
+    def is_valid(x, y):
+        return 0 <= x < board_size and 0 <= y < board_size and board[x][y] == -1
+
+    def count_onward_moves(x, y):
+        count = 0
+        for dx, dy in knight_moves:
+            nx, ny = x + dx, y + dy
+            if is_valid(nx, ny):
+                count += 1
+        return count
+
     board[start_x][start_y] = 0
-    pos = 1
-    curr_x, curr_y = start_x, start_y
-    path = [(curr_x, curr_y)]
+    path = [(start_x, start_y)]
 
-    while pos < N * N:
+    for move_num in range(1, board_size * board_size):
+        current_x, current_y = path[-1]
         min_deg = 9
         next_move = None
 
-        for i in range(8):
-            nx = curr_x + move_x[i]
-            ny = curr_y + move_y[i]
-            if is_valid(nx, ny, board):
-                c = count_onward_moves(nx, ny, board)
-                if c < min_deg:
-                    min_deg = c
+        for dx, dy in knight_moves:
+            nx, ny = current_x + dx, current_y + dy
+            if is_valid(nx, ny):
+                deg = count_onward_moves(nx, ny)
+                if deg < min_deg:
+                    min_deg = deg
                     next_move = (nx, ny)
 
-        if not next_move:
-            return None
+        if next_move is None:
+            return None  # No further moves possible – fail
 
-        curr_x, curr_y = next_move
-        board[curr_x][curr_y] = pos
-        path.append((curr_x, curr_y))
-        pos += 1
+        nx, ny = next_move
+        board[nx][ny] = move_num
+        path.append((nx, ny))
 
     return path
+
 

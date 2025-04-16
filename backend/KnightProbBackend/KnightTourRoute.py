@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 import random
 import sqlite3
 import os
-from .KnightTour import validate_player_path, solve_knights_tour
+from .KnightTour import validate_player_path, solve_knights_tour, warnsdorff_tour
 
 knight_blueprint = Blueprint('knight', __name__, url_prefix='/api')
 
@@ -95,3 +95,30 @@ def submit_winner():
             return jsonify({"error": f"Database error: {str(e)}"}), 500
     else:
         return jsonify({"error": "Could not solve Knight's Tour from given start position."}), 400
+
+
+    # 🔁 Warndoff's Rule Visualization
+@knight_blueprint.route('/warnsdorff', methods=['POST'])
+def solve_from_start_position_warnsdoff():
+    data = request.get_json()
+    print("Received solve request with data:", data)
+
+    path = data.get('path')
+
+    if not path or len(path) == 0 or not isinstance(path[0], list) or len(path[0]) != 2:
+        print("Invalid or missing start position")
+        return jsonify({"success": False, "message": "Invalid or missing start position"}), 400
+
+    try:
+        start_x, start_y = int(path[0][0]), int(path[0][1])
+    except (ValueError, TypeError):
+        print("Start position format error")
+        return jsonify({"success": False, "message": "Start position must contain integers"}), 400
+
+    solution = warnsdorff_tour(start_x, start_y)
+    print("Warndoff'Rule solution found:", solution)
+
+    if solution:
+        return jsonify({"success": True, "path": solution})
+    else:
+        return jsonify({"success": False, "message": "No solution possible from this position"})
