@@ -31,8 +31,6 @@ def validate_player_path(path, player_name=None):
             return False, f"Invalid knight move at index {i}"
 
     if len(path) == 64:
-        ###if player_name:
-            ###save_winner_to_db(player_name)
         return True, "Correct Knight's Tour! Congrats You won the game. Saving winner to Database"
 
     #  Check if a tour is still possible from last move using backtracking
@@ -111,11 +109,76 @@ def solve_knights_tour(start_x, start_y, time_limit=60):
         return None
 
 
-
 # -----------------------
 # Warnsdorff's Heuristic
 # -----------------------
-# Warnsdorff’s Rule implementation
+
+#Validation using Warnsdoff's Rule - Customized version
+def validate_warnsdorff_tour(path):
+    if not path or len(path) > 64:
+        return False, "Invalid path for Warnsdorff validation"
+
+    visited = [[-1 for _ in range(8)] for _ in range(8)]
+    for i, (x, y) in enumerate(path):
+        if not (0 <= x < 8 and 0 <= y < 8):
+            return False, f"Invalid coordinate in path at index {i}"
+        visited[x][y] = i
+
+    step = len(path)
+
+    if step == 64:
+        return True, "Tour already completed (64 steps) — no need to validate further."
+
+
+    last_x, last_y = path[-1]
+
+    if is_tour_possible_warnsdorff(last_x, last_y, visited, step):
+        return False, "Incomplete Tour. But you are close! A solution is still possible from here."
+    else:
+        return False, "Warnsdorff says: No complete tour is possible from your current position."
+
+    # Knight's move offsets
+move_x = [2, 1, -1, -2, -2, -1, 1, 2]
+move_y = [1, 2, 2, 1, -1, -2, -2, -1]
+
+# Checks if a position is within bounds and unvisited
+def is_unvisited(x, y, visited):
+    return 0 <= x < 8 and 0 <= y < 8 and visited[x][y] == -1
+
+# Counts the number of valid onward moves from a position
+def count_onward_moves(x, y, visited):
+    count = 0
+    for i in range(8):
+        nx, ny = x + move_x[i], y + move_y[i]
+        if is_unvisited(nx, ny, visited):
+            count += 1
+    return count
+
+# Warnsdorff's Rule implementation (recursive)
+def is_tour_possible_warnsdorff(x, y, visited, step):
+    
+    # Generate all possible next moves with onward move counts
+    candidates = []
+    for i in range(8):
+        nx, ny = x + move_x[i], y + move_y[i]
+        if is_unvisited(nx, ny, visited):
+            onward = count_onward_moves(nx, ny, visited)
+            candidates.append(((nx, ny), onward))
+
+    # Sort moves by Warnsdorff's heuristic (least onward moves first)
+    candidates.sort(key=lambda item: item[1])
+
+    for (nx, ny), _ in candidates:
+        visited[nx][ny] = step
+        if is_tour_possible_warnsdorff(nx, ny, visited, step + 1):
+            return True
+        visited[nx][ny] = -1  # backtrack
+
+    return False
+
+
+
+# Complete Warnsdorff’s Rule implementation to visualize the knight tour problem using the user's current starting point
 def warnsdorff_tour(start_x, start_y, board_size=8):
     knight_moves = [
         (2, 1), (1, 2), (-1, 2), (-2, 1),
@@ -139,7 +202,7 @@ def warnsdorff_tour(start_x, start_y, board_size=8):
     path = [(start_x, start_y)]
 
     for move_num in range(1, board_size * board_size):
-        current_x, current_y = path[-1]
+        current_x, current_y = path[-1] # get the last element in the path
         min_deg = 9
         next_move = None
 

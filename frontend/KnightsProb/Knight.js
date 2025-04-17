@@ -126,7 +126,7 @@ function submitPath() {
         document.getElementById('status').innerText = "❌ You chose to quit. Game over.";
       }
     } else {
-      document.getElementById('status').innerText = "❌ " + data.message;
+      document.getElementById('status').innerText = "😕 Hmm... seems like you're out of valid moves. Let's double-check with my algorithms before we call this a loss...";
 
       const startingPoint = selectedPath[0];
       visualizeBacktrackingTour(startingPoint);
@@ -175,6 +175,8 @@ function visualizeBacktrackingTour(startingPoint) {
     if (data.success) {
       console.log("✅ Backtracking solution path:", data.path);
       visualizeBacktrackSolution(data.path);
+      document.getElementById('status').innerText = "❌ You lose this round! No worries, even the best fall sometimes. ";
+
     } else {
       console.warn("❌ Backtracking failed. Trying Warnsdorff...");
 
@@ -190,8 +192,11 @@ function visualizeBacktrackingTour(startingPoint) {
           console.log("⚡ Warnsdorff solution path:", warnData.path);
           visualizeBacktrackSolution(warnData.path); // Reuse same visualizer
           alert("Backtracking failed. Shown path uses Warnsdorff’s heuristic.");
+          document.getElementById('status').innerText = "❌ You lose this round! No worries, even the best fall sometimes. ";
+
         } else {
           alert("No solution found even with Warnsdorff.");
+          document.getElementById('status').innerText = "Oop! Seems even I can't solve the problem. So how about we call this game a tie and move on?";
         }
       })
       .catch(err => {
@@ -213,7 +218,7 @@ function visualizeBacktrackSolution(path) {
   const interval = setInterval(() => {
     if (index >= path.length) {
       clearInterval(interval);
-      document.getElementById('status').innerText = "✅ Here's a valid Knight's Tour from your starting point!";
+      document.getElementById('status').innerText = "📚Game over! But learning never stops — check out this successful tour from your starting point.";
       return;
     }
 

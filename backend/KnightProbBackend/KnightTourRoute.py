@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 import random
 import sqlite3
 import os
-from .KnightTour import validate_player_path, solve_knights_tour, warnsdorff_tour
+from .KnightTour import validate_player_path, solve_knights_tour, warnsdorff_tour, validate_warnsdorff_tour
 
 knight_blueprint = Blueprint('knight', __name__, url_prefix='/api')
 
@@ -15,7 +15,7 @@ def start_game():
     start_y = random.randint(0, 7)
     return jsonify({"start": {"x": start_x, "y": start_y}})
 
-@knight_blueprint.route('/validate', methods=['POST'])
+"""@knight_blueprint.route('/validate', methods=['POST'])
 def validate_path():
     data = request.get_json()
     path = data.get('path')
@@ -27,6 +27,39 @@ def validate_path():
         path = [(int(p[0]), int(p[1])) for p in path]
         valid, message = validate_player_path(path)
         return jsonify({"valid": valid, "message": message})
+    except Exception as e:
+        return jsonify({"valid": False, "message": str(e)}), 500"""
+
+
+@knight_blueprint.route('/validate', methods=['POST'])
+def validate_path():
+    data = request.get_json()
+    path = data.get('path')
+
+    if not path:
+        return jsonify({"valid": False, "message": "Path not provided"}), 400
+
+    try:
+        # Convert path to tuples
+        path = [(int(p[0]), int(p[1])) for p in path]
+
+        # Validate with both approaches
+        valid_bt, msg_bt = validate_player_path(path)
+        valid_warn, msg_warn = validate_warnsdorff_tour(path)
+
+        # If any of the algorithms validate the path as a full correct tour
+        if valid_bt or valid_warn:
+            return jsonify({
+                "valid": True,
+                "message": "Correct Knight's Tour! 🎉 Congrats, you won the game. Saving winner to Database."
+            })
+
+        # If neither validates the tour
+        return jsonify({
+            "valid": False,
+            "message": msg_warn if msg_warn else msg_bt
+        })
+
     except Exception as e:
         return jsonify({"valid": False, "message": str(e)}), 500
 

@@ -1,6 +1,25 @@
+/* Center the entire content vertically and horizontally */
+body, html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.content {
+  text-align: center;
+}
+
+/* You can keep all your existing styles below */
 body {
   font-family: Arial, sans-serif;
-  text-align: center;
   padding: 20px;
 }
 
@@ -10,6 +29,8 @@ body {
   grid-template-rows: repeat(8, 60px);
   margin: 20px auto;
   border: 2px solid #333;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* subtle shadow */
+  border-radius: 8px; /* rounded corners */
 }
 
 .square {
@@ -24,8 +45,6 @@ body {
   align-items: center;
   justify-content: center;
 }
-
-
 
 .white { background-color: #f0d9b5; }
 .black { background-color: #b58863; }
