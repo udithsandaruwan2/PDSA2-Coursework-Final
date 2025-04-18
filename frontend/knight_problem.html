@@ -9,9 +9,29 @@
   <div class="container">
     <div class="content">
       <h1>Knight's Tour Problem</h1>
+
+      <!-- 🔘 Algorithm Selection -->
+      <div style="margin-bottom: 10px;">
+        <strong>Select Algorithm:</strong><br />
+        <label>
+          <input type="radio" name="algo" value="backtracking" checked />
+          Backtracking
+        </label>
+        <label style="margin-left: 15px;">
+          <input type="radio" name="algo" value="warnsdorff" />
+          Warnsdorff’s Rule
+        </label>
+      </div>
+
       <button onclick="startGame()">Start Game</button>
       <div id="board" class="chessboard"></div>
       <p id="status"></p>
+
+      <!-- 👇 Winner form, hidden by default -->
+      <div id="winner-form" style="display: none; margin-top: 10px;">
+        <input type="text" id="username" placeholder="Enter your username" />
+        <button onclick="submitWinner()">Submit</button>
+      </div>
     </div>
   </div>
 

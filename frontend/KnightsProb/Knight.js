@@ -69,6 +69,9 @@ function selectMove(row, col) {
   selectedPath.push([row, col]);
   drawBoard([row, col]);
 
+  document.getElementById('status').innerText = `✅ Knight moved to (${row}, ${col})`;
+
+
   if (selectedPath.length === 64) {
     submitPath();
     return;
@@ -90,31 +93,8 @@ function submitPath() {
   .then(res => res.json())
   .then(data => {
     if (data.valid) {
-      document.getElementById('status').innerText = "✅ You Win!";
-
-      // 🔥 Prompt for name and save winner
-      const name = prompt("You won! Enter your name to save your score:");
-      const startX = selectedPath[0][0];
-      const startY = selectedPath[0][1];
-      const pathStr = JSON.stringify(selectedPath);  // Convert path to a string
-      const timestamp = new Date().toISOString();  // Current timestamp in ISO format
-
-      fetch("http://localhost:5000/api/submit_winner", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          name: name,
-          start_x: startX,
-          start_y: startY,
-          path: pathStr,  // Send the path as string
-          timestamp: timestamp  // Send the current timestamp
-        })
-      })
-      .then(res => res.json())
-      .then(data => alert(data.message))
-      .catch(err => console.error("Error saving winner:", err));
+      document.getElementById('status').innerText = "✅ Here's a valid Knight's Tour from your starting point! 🎉";
+      document.getElementById('winner-form').style.display = 'block'; // Show input box
 
     } else if (data.message.includes("Incomplete Tour. But you are close! A solution is still possible from here.")) {
       const tryAgain = confirm(data.message + "\nDo you want to continue playing from here?");
@@ -130,29 +110,7 @@ function submitPath() {
 
       const startingPoint = selectedPath[0];
       visualizeBacktrackingTour(startingPoint);
-      // 🔥 Prompt for name and save winner
-      const name = prompt("You won! Enter your name to save your score:");
-      const startX = selectedPath[0][0];
-      const startY = selectedPath[0][1];
-      const pathStr = JSON.stringify(selectedPath);  // Convert path to a string
-      const timestamp = new Date().toISOString();  // Current timestamp in ISO format
-
-      fetch("http://localhost:5000/api/submit_winner", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          name: name,
-          start_x: startX,
-          start_y: startY,
-          path: pathStr,  // Send the path as string
-          timestamp: timestamp  // Send the current timestamp
-        })
-      })
-      .then(res => res.json())
-      .then(data => alert(data.message))
-      .catch(err => console.error("Error saving winner:", err));
+      
     }
   })
   .catch(err => {
@@ -160,6 +118,44 @@ function submitPath() {
     document.getElementById('status').innerText = "❌ Error communicating with the server.";
   });
 }
+
+//Submitting winner to the database
+function submitWinner() {
+  const username = document.getElementById("username").value.trim();
+  if (!username) {
+    alert("Please enter a username.");
+    return;
+  }
+
+  const startX = selectedPath[0][0];
+  const startY = selectedPath[0][1];
+  const pathStr = JSON.stringify(selectedPath);
+  const timestamp = new Date().toISOString();
+
+  fetch("http://localhost:5000/api/submit_winner", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: username,
+      start_x: startX,
+      start_y: startY,
+      path: pathStr,
+      timestamp: timestamp
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById('status').innerText = `✅ ${data.message}`;
+    document.getElementById('winner-form').style.display = 'none';
+    document.getElementById('username').value = ''; // Clear input
+  })
+  .catch(err => {
+    console.error("Error saving winner:", err);
+    document.getElementById('status').innerText = "❌ Error saving winner.";
+  });
+}
+
+
 
 
 function visualizeBacktrackingTour(startingPoint) {

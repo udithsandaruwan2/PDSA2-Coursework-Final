@@ -20,6 +20,9 @@ cursor.execute('''
     )
 ''')
 
+cursor.execute("ALTER TABLE winners ADD COLUMN backtracking_time REAL")
+cursor.execute("ALTER TABLE winners ADD COLUMN warnsdorff_time REAL")
+
 # Save changes and close the connection
 conn.commit()
 conn.close()
