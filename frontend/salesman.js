@@ -1,6 +1,7 @@
 const canvas = document.getElementById("cityCanvas");
 const ctx = canvas.getContext("2d");
 
+let gameOver = false;  // Flag to track if the game is over
 if (!ctx) {
     console.error("Canvas context not available");
     alert("Your browser doesn't support canvas operations!");
@@ -17,11 +18,13 @@ let playerName = "Anonymous";
 let homeCity = "Unknown";
 
 const cityRadius = 8;
-const numCities = 6;
+const numCities = 10;
 
 // Generate random cities
 let homeCityIndex = Math.floor(Math.random() * numCities); // Randomly choose a home city index
+const homeChar = String.fromCharCode(65 + homeCityIndex); 
 
+// Function to generate random cities with distances between 50 km and 100 km
 // Function to generate random cities with distances between 50 km and 100 km
 function generateCities() {
     cities = [];
@@ -55,7 +58,8 @@ function generateCities() {
     }
 
     // Highlight the Home City
-    document.getElementById("homeCity").innerText = `Home City: City ${homeCityIndex + 1}`;
+    const homeCityChar = String.fromCharCode(65 + homeCityIndex); // Convert home city id to alphabet (A, B, C, ...)
+    document.getElementById("homeCity").innerText = `Home City: City ${homeCityChar}`;
 
     // Reset UI elements
     document.getElementById("humanResult").innerText = "Human Distance: N/A";
@@ -66,12 +70,29 @@ function generateCities() {
     
     drawCities();
 }
+
+// Function to convert city ID to alphabetic character (e.g., 0 -> A, 1 -> B, etc.)
+function getCityChar(cityId) {
+    return String.fromCharCode(65 + cityId); // 65 is ASCII for 'A'
+}
+
+
+    // Highlight the Home City
+    document.getElementById("homeCity").innerText = `Home City: City ${homeCityIndex + 1}`;
+
+    // Reset UI elements
+    document.getElementById("humanResult").innerText = "Human Distance: N/A";
+    document.getElementById("nnResult").style.display = "none";
+    document.getElementById("bfResult").style.display = "none";
+    document.getElementById("hkResult").style.display = "none";
+    document.getElementById("toggles").style.display = "none";
+    
+    drawCities();
+
 // Add function to collect player info
 function collectPlayerInfo() {
     playerName = prompt("Please enter your name:", "Anonymous");
-    homeCity = prompt("Please enter your home city:", "Unknown");
     if (!playerName) playerName = "Anonymous";
-    if (!homeCity) homeCity = "Unknown";
 }
 
 // Update generateCities to prompt for player info on first run
@@ -106,9 +127,10 @@ function drawCities() {
         ctx.fill();
         ctx.stroke();
 
-        // Draw city ID text
+        // Draw city ID text as A, B, C, ...
+        const cityLabel = String.fromCharCode(65 + city.id); // 65 is 'A'
         ctx.fillStyle = "black";
-        ctx.fillText(`C${city.id}`, city.x + 10, city.y);
+        ctx.fillText(`${cityLabel}`, city.x + 10, city.y);
 
         // If it's the home city, draw "Home" text beneath it
         if (city.id === homeCityIndex) {
@@ -260,10 +282,10 @@ function submitRoute() {
     const humanDistanceInUnits = calculateTotalDistance(fullHumanRoute);  // This should include the return to home
     const humanDistanceInKm = humanDistanceInUnits / 10;  // Directly in km (no scaling needed)
 
-    console.log(`Full Human Route:`, fullHumanRoute);  // Log the full human route for debugging
-    console.log(`Human Distance:`, humanDistanceInKm);
+    console.log(`Full Human Route: `, fullHumanRoute);  // Log the full human route for debugging
+    console.log(`Human Distance: `, humanDistanceInKm);
 
-    document.getElementById("humanResult").innerText = `Human Distance: ${humanDistanceInKm.toFixed(2)} km`;
+    document.getElementById("humanResult").innerText = `Human Distance: ${humanDistanceInKm.toFixed(1)} km`;
 
     document.getElementById("nnResult").style.display = "none";
     document.getElementById("bfResult").style.display = "none";
@@ -274,9 +296,6 @@ function submitRoute() {
     drawCities(); // Redraw the cities and the final path
 }
 
-// Function to compare with algorithms
-// Function to compare with algorithms and check if human found the shortest route
-// Function to compare with algorithms and check if human found the shortest route
 function compareWithAlgorithms() {
     console.log("Compare with Algorithms clicked");
 
@@ -287,25 +306,30 @@ function compareWithAlgorithms() {
     }
 
     // Prepare the cities array for backend: include home city and user-selected cities
-    const homeCityObj = cities[homeCityIndex];
+    const homeCityObj = cities[homeCityIndex];  // This gives the full city object (A to J)
     const selectedCityIds = playerRoute.map(city => city.id);
     const selectedCities = cities.filter(city => selectedCityIds.includes(city.id));
     const citiesForBackend = [homeCityObj, ...selectedCities];
-    // Remove duplicates (in case home city is also in selectedCities)
-    const uniqueCities = Array.from(new Map(citiesForBackend.map(c => [c.id, c])).values());
+
+    // Map the selected city IDs to letters (A, B, C, ...)
+    const selectedCityChars = selectedCities.map(city => String.fromCharCode(65 + city.id));  // A to J
+
+    // Map the home city to a letter (A, B, C, ...)
+    const homeCityChar = String.fromCharCode(65 + homeCityObj.id);  // Convert to A, B, C...
 
     // Log the selected cities for debugging
-    console.log("Selected Cities for Algorithms (with home):", uniqueCities);
+    console.log("Selected Cities for Algorithms (with home):", citiesForBackend);
 
     try {
         const requestData = {
-            cities: uniqueCities,  // Send home city + user-selected cities
+            cities: citiesForBackend,  // Send home city + user-selected cities
             player_name: playerName,
-            home_city: homeCityObj.id, // Send the home city ID (int)
-            human_route: selectedCityIds  // Pass selected city IDs as human_route
+            home_city: homeCityChar,  // Send the home city as a character (A, B, C, etc.)
+            human_route: selectedCityChars  // Send the human route with city letters (A, B, C, etc.)
         };
         console.log("Data being sent to the backend:", requestData);
 
+        // Make the API call to compare the algorithms
         fetch('http://127.0.0.1:5000/api/solve_tsp', {
             method: 'POST',
             headers: {
@@ -320,9 +344,10 @@ function compareWithAlgorithms() {
             return response.json();
         })
         .then(data => {
-            // Defensive: check for error in response
-            if (data.error) {
-                alert(data.error);
+            // Defensive: check for missing data
+            if (!data || !data.nearest_neighbor || !data.brute_force || !data.held_karp) {
+                console.error('Missing algorithm results in response:', data);
+                alert('Error: Missing algorithm results.');
                 return;
             }
 
@@ -330,50 +355,61 @@ function compareWithAlgorithms() {
             document.getElementById("toggles").style.display = "block";
 
             if (data.nearest_neighbor && !data.nearest_neighbor.error) {
-                console.log("Nearest Neighbor result:", data.nearest_neighbor);  // Log the Nearest Neighbor result
+                console.log("Nearest Neighbor result:", data.nearest_neighbor);
                 nnRoute = JSON.parse(data.nearest_neighbor.route);  // Parse route if it's JSON
                 document.getElementById("nnResult").innerText =
-                    `Nearest Neighbor: ${data.nearest_neighbor.distance.toFixed(2)} km (Time: ${(data.nearest_neighbor.time * 1000).toFixed(2)} ms)`;
+                    `Nearest Neighbor: ${data.nearest_neighbor.distance.toFixed(1)} km (Time: ${(data.nearest_neighbor.time * 1000).toFixed(2)} ms)`;
                 document.getElementById("nnResult").style.display = "block";
                 document.getElementById("showNN").checked = true;
             }
 
             if (data.brute_force && !data.brute_force.error) {
-                console.log("Brute Force result:", data.brute_force);  // Log the Brute Force result
+                console.log("Brute Force result:", data.brute_force);
                 bfRoute = JSON.parse(data.brute_force.route);  // Parse route if it's JSON
                 document.getElementById("bfResult").innerText =
-                    `Brute Force: ${data.brute_force.distance.toFixed(2)} km (Time: ${(data.brute_force.time * 1000).toFixed(2)} ms)`;
+                    `Brute Force: ${data.brute_force.distance.toFixed(1)} km (Time: ${(data.brute_force.time * 1000).toFixed(2)} ms)`;
                 document.getElementById("bfResult").style.display = "block";
                 document.getElementById("showBF").checked = true;
             }
 
             if (data.held_karp && !data.held_karp.error) {
-                console.log("Held-Karp result:", data.held_karp);  // Log the Held-Karp result
+                console.log("Held-Karp result:", data.held_karp);
                 hkRoute = JSON.parse(data.held_karp.route);  // Parse route if it's JSON
                 document.getElementById("hkResult").innerText =
-                    `Held-Karp: ${data.held_karp.distance.toFixed(2)} km (Time: ${(data.held_karp.time * 1000).toFixed(2)} ms)`;
+                    `Held-Karp: ${data.held_karp.distance.toFixed(1)} km (Time: ${(data.held_karp.time * 1000).toFixed(2)} ms)`;
                 document.getElementById("hkResult").style.display = "block";
                 document.getElementById("showHK").checked = true;
             }
 
             // Now compare the human distance with the algorithm distances
-            const humanDistance = parseFloat(data.human_route.distance).toFixed(2); // Round to 2 decimal places
-            const nnDistance = parseFloat(data.nearest_neighbor.distance).toFixed(2);
-            const bfDistance = parseFloat(data.brute_force.distance).toFixed(2);
-            const hkDistance = parseFloat(data.held_karp.distance).toFixed(2);
+            const humanDistance = parseFloat(data.human_route.distance).toFixed(1);
+            const nnDistance = parseFloat(data.nearest_neighbor.distance).toFixed(1);
+            const bfDistance = parseFloat(data.brute_force.distance).toFixed(1);
+            const hkDistance = parseFloat(data.held_karp.distance).toFixed(1);
 
-            // Check if human distance is equal to or better than any of the algorithm distances
+            // Fix comparison logic: Human route should only be considered as the best if it's shorter or equal
             let resultMessage = "";
             if (humanDistance <= nnDistance && humanDistance <= bfDistance && humanDistance <= hkDistance) {
-                resultMessage = "Congratulations! You found the shortest route!";
+                if (humanDistance < nnDistance || humanDistance < bfDistance || humanDistance < hkDistance) {
+                    resultMessage = "Congratulations! You found the shortest route!";
+                    saveWinToDatabase(data, humanDistance, selectedCityChars); // Trigger saving win data
+                } else {
+                    resultMessage = "Congratulations! You matched the best algorithm route!";
+                    // Save the win data when the human matches or finds the best algorithm route
+                    saveWinToDatabase(data, humanDistance, selectedCityChars); // Trigger saving win data
+                }
             } else {
                 resultMessage = "Nice try! The algorithm found a shorter route.";
+                saveGameSessionToDatabase(data, selectedCityChars);  // Save the session after the comparison
             }
 
             // Display the result message
             document.getElementById("resultMessage").innerText = resultMessage;
 
             drawCities();  // Redraw the cities with the updated routes
+
+            // Record the game session after the algorithms are compared
+            
         })
         .catch(error => {
             console.error('Error during algorithm comparison:', error);
@@ -386,6 +422,70 @@ function compareWithAlgorithms() {
 }
 
 
+// Function to save the game session after algorithm comparison
+function saveGameSessionToDatabase(data, selectedCityIds) {
+    const requestData = {
+        player_name: playerName,
+        home_city: homeChar, // Use the updated home city here
+        selected_cities: selectedCityIds,
+        nn_distance: data.nearest_neighbor.distance,
+        bf_distance: data.brute_force.distance,
+        hk_distance: data.held_karp.distance,
+        nn_time: data.nearest_neighbor.time,
+        bf_time: data.brute_force.time,
+        hk_time: data.held_karp.time,
+    };
+
+    // Send the game session data to the backend to be saved
+    fetch('http://127.0.0.1:5000/api/save_game_session', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Game session saved:', data);
+    })
+    .catch(error => {
+        console.error('Error saving game session:', error);
+    });
+}
+
+
+
+// Function to save the winning data to the database
+function saveWinToDatabase(data, humanDistance, humanRoute) {
+    const requestData = {
+        session_id: data.session_id,
+        player_name: playerName,
+        home_city: homeChar,
+        human_route: humanRoute,
+        human_distance: humanDistance,
+        nn_distance: data.nearest_neighbor.distance,
+        bf_distance: data.brute_force.distance,
+        hk_distance: data.held_karp.distance,
+        nn_time: data.nearest_neighbor.time,
+        bf_time: data.brute_force.time,
+        hk_time: data.held_karp.time,
+    };
+
+    fetch('http://127.0.0.1:5000/api/save_win', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Player win saved successfully!");
+    })
+    .catch(error => {
+        console.error('Error saving player win to database:', error);
+    });
+}
 
 
 // Nearest Neighbour Algorithm
@@ -441,7 +541,6 @@ function permute(arr) {
     );
 }
 
-let gameOver = false;  // Flag to track if the game is over
 
 // Reset game function
 function resetGame() {
@@ -463,6 +562,8 @@ function resetGame() {
     document.getElementById("showNN").checked = false;
     document.getElementById("showBF").checked = false;
     document.getElementById("showHK").checked = false;
+
+    homeCityIndex = Math.floor(Math.random() * numCities);
 
     // Generate new cities after reset
     generateCities();  // Generate new cities after reset
@@ -488,19 +589,12 @@ function viewStats() {
             }
 
             let html = '<table class="stats-table">';
-            html += '<  tr><th>Algorithm</th><th>Avg Time (ms)</th><th>Min Time (ms)</th><th>Max Time (ms)</th><th>Avg Distance</th></tr>';
+            html += '<tr><th>Algorithm</th><th>Avg Time (ms)</th><th>Min Time (ms)</th><th>Max Time (ms)</th><th>Avg Distance</th></tr>';
             
             stats.forEach(stat => {
                 const [algo, avgTime, minTime, maxTime, avgDist] = stat;
-                html += `
-                    <tr>
-                        <td>${algo}</td>
-                        <td>${(avgTime * 1000).toFixed(2)}</td>
-                        <td>${(minTime * 1000).toFixed(2)}</td>
-                        <td>${(maxTime * 1000).toFixed(2)}</td>
-                        <td>${avgDist.toFixed(2)}</td>
-                    </tr>
-                `;
+                html += '<tr><th>Algorithm</th><th>Avg Time (ms)</th><th>Min Time (ms)</th><th>Max Time (ms)</th><th>Avg Distance</th></tr>';
+
             });
             
             html += '</table>';
@@ -514,6 +608,7 @@ function viewStats() {
             document.getElementById('statsResult').style.display = 'block';
         });
 }
+
 
 // Add link to database viewer
 function addDatabaseViewerLink() {

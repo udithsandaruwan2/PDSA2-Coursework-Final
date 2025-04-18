@@ -16,29 +16,36 @@ class TSPDatabase:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
 
-                # Store player, home city, selected cities, and distance matrix
+                #Delete existing tables if they exist
+                cursor.execute('DROP TABLE IF EXISTS game_sessions')
+                cursor.execute('DROP TABLE IF EXISTS win_players')
+
+                # Create game_sessions table
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS game_sessions (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         player_name TEXT NOT NULL,
                         home_city TEXT NOT NULL,
-                        selected_cities TEXT NOT NULL,     -- JSON list of selected cities
-                        distance_matrix TEXT,     -- JSON 2D array, can be NULL
+                        selected_cities TEXT NOT NULL,
+                        nn_distance REAL NOT NULL,
+                        bf_distance REAL NOT NULL,
+                        hk_distance REAL NOT NULL,
+                        nn_time REAL NOT NULL,
+                        bf_time REAL NOT NULL,
+                        hk_time REAL NOT NULL,
                         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
 
-                # Store results for each algorithm
+                # Create win_players table
                 cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS algorithm_results (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        game_session_id INTEGER,
-                        algorithm_name TEXT NOT NULL,
-                        route TEXT NOT NULL,             -- JSON list of city ids or coords
-                        distance REAL NOT NULL,
-                        execution_time REAL NOT NULL,
-                        complexity_analysis TEXT,
-                        FOREIGN KEY (game_session_id) REFERENCES game_sessions(id)
+                    CREATE TABLE IF NOT EXISTS win_players (
+                        player_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        player_name TEXT,
+                        session_id INTEGER,
+                        human_route TEXT NOT NULL,
+                        human_distance REAL NOT NULL,
+                        FOREIGN KEY (session_id) REFERENCES game_sessions(id)
                     )
                 ''')
 
@@ -47,17 +54,18 @@ class TSPDatabase:
         except sqlite3.Error as e:
             print(f"Error creating tables: {e}")
 
-    def record_game_session(self, player_name, home_city, cities, distance_matrix=None):
-        print(f"Recording game session for player: {player_name}, Home City: {home_city}, Cities: {cities}")
-        cities_json = json.dumps(cities)
-        distance_matrix_json = json.dumps(distance_matrix) if distance_matrix else None
+    def record_game_session(self, player_name, home_city, selected_cities, nn_distance, bf_distance, hk_distance, nn_time, bf_time, hk_time):
         try:
+            selected_cities_json = json.dumps(selected_cities)
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
-                    INSERT INTO game_sessions (player_name, home_city, selected_cities, distance_matrix)
-                    VALUES (?, ?, ?, ?)
-                ''', (player_name, home_city, cities_json, distance_matrix_json))
+                    INSERT INTO game_sessions (
+                        player_name, home_city, selected_cities,
+                        nn_distance, bf_distance, hk_distance,
+                        nn_time, bf_time, hk_time
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (player_name, home_city, selected_cities_json, nn_distance, bf_distance, hk_distance, nn_time, bf_time, hk_time))
                 conn.commit()
                 print(f"Game session inserted successfully with ID {cursor.lastrowid}")
                 return cursor.lastrowid
@@ -65,21 +73,19 @@ class TSPDatabase:
             print(f"Error inserting game session: {e}")
             return None
 
-    def record_algorithm_result(self, game_session_id, algorithm_name, route, distance, execution_time, complexity):
+    def record_win_player(self, player_name, session_id, human_route, human_distance):
         try:
-            route_json = json.dumps(route)
-            complexity_str = json.dumps(complexity)
-
+            human_route_json = json.dumps(human_route)
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
-                    INSERT INTO algorithm_results (game_session_id, algorithm_name, route, distance, execution_time, complexity_analysis)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ''', (game_session_id, algorithm_name, route_json, distance, execution_time, complexity_str))
+                    INSERT INTO win_players (player_name, session_id, human_route, human_distance)
+                    VALUES (?, ?, ?, ?)
+                ''', (player_name, session_id, human_route_json, human_distance))
                 conn.commit()
-                print(f"Algorithm result for {algorithm_name} inserted successfully.")
+                print(f"Win player data inserted successfully for player {player_name}.")
         except sqlite3.Error as e:
-            print(f"Error inserting algorithm result: {e}")
+            print(f"Error inserting win player data: {e}")
 
     def get_all_sessions(self):
         try:
@@ -91,49 +97,33 @@ class TSPDatabase:
             print(f"Error fetching sessions: {e}")
             return []
 
-    def get_all_algorithm_results(self):
-        try:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
-                cursor.execute('SELECT * FROM algorithm_results ORDER BY game_session_id DESC, algorithm_name')
-                return cursor.fetchall()
-        except sqlite3.Error as e:
-            print(f"Error fetching algorithm results: {e}")
-            return []
-
-    def get_algorithm_stats(self):
+    def get_all_win_players(self):
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
-                    SELECT algorithm_name,
-                           AVG(execution_time),
-                           MIN(execution_time),
-                           MAX(execution_time),
-                           AVG(distance)
-                    FROM algorithm_results
-                    GROUP BY algorithm_name
+                    SELECT wp.player_name, wp.human_route, wp.human_distance, wp.session_id
+                    FROM win_players wp
                 ''')
-                return cursor.fetchall()
-        except sqlite3.Error as e:
-            print(f"Error fetching stats: {e}")
-            return []
+                rows = cursor.fetchall()
 
-# Algorithm complexity metadata
-COMPLEXITY_INFO = {
-    "nearest_neighbor": {
-        "time_complexity": "O(n²)",
-        "space_complexity": "O(n)",
-        "description": "Greedy approach choosing nearest unvisited city at each step."
-    },
-    "brute_force": {
-        "time_complexity": "O(n!)",
-        "space_complexity": "O(n)",
-        "description": "Evaluates every possible permutation to find optimal solution."
-    },
-    "held_karp": {
-        "time_complexity": "O(n²·2ⁿ)",
-        "space_complexity": "O(n·2ⁿ)",
-        "description": "Dynamic programming solution using memoization and subsets."
-    }
-}
+                # Debug: Print out rows for inspection
+                print(f"Fetched rows from win_players: {rows}")
+
+                # Make sure rows are not empty
+                if not rows:
+                    print("No win players found in the database.")
+                    return []
+
+                # Ensure that every row contains exactly 4 elements
+                cleaned_rows = []
+                for row in rows:
+                    if len(row) == 4:  # Expected number of columns
+                        cleaned_rows.append(row)
+                    else:
+                        print(f"Skipping malformed row (incorrect number of columns): {row}")
+
+                return cleaned_rows
+        except sqlite3.Error as e:
+            print(f"Error fetching win players data: {e}")
+            return []
