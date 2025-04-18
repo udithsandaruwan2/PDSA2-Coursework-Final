@@ -19,7 +19,7 @@ let homeCity = "Unknown";
 
 const cityRadius = 8;
 const numCities = 10;
-
+let humanDistanceInKm = 0; // Initialize human distance variable
 // Generate random cities
 let homeCityIndex = Math.floor(Math.random() * numCities); // Randomly choose a home city index
 const homeChar = String.fromCharCode(65 + homeCityIndex); 
@@ -280,15 +280,18 @@ function submitRoute() {
 
     // Now calculate the distance, ensuring to include home-to-first-city and last-city-to-home
     const humanDistanceInUnits = calculateTotalDistance(fullHumanRoute);  // This should include the return to home
-    const humanDistanceInKm = humanDistanceInUnits / 10;  // Directly in km (no scaling needed)
+    humanDistanceInKm = humanDistanceInUnits / 10;  // Update the global variable with the calculated value
 
     console.log(`Full Human Route: `, fullHumanRoute);  // Log the full human route for debugging
     console.log(`Human Distance: `, humanDistanceInKm);
 
+    // Display the human distance in the frontend
     document.getElementById("humanResult").innerText = `Human Distance: ${humanDistanceInKm.toFixed(1)} km`;
 
+    // Hide algorithm results until comparison
     document.getElementById("nnResult").style.display = "none";
     document.getElementById("bfResult").style.display = "none";
+    document.getElementById("hkResult").style.display = "none";
     document.getElementById("toggles").style.display = "none";
 
     stopGame();
@@ -296,9 +299,10 @@ function submitRoute() {
     drawCities(); // Redraw the cities and the final path
 }
 
+
 function compareWithAlgorithms() {
     console.log("Compare with Algorithms clicked");
-
+    submitRoute();  // Ensure the route is submitted before comparison
     if (playerRoute.length < 1) {
         console.log("Player route is empty, please submit your route first!");
         alert("Please submit your route first!");
@@ -382,10 +386,20 @@ function compareWithAlgorithms() {
             }
 
             // Now compare the human distance with the algorithm distances
-            const humanDistance = parseFloat(data.human_route.distance).toFixed(1);
+            // Inside compareWithAlgorithms()
+            const humanDistance = humanDistanceInKm.toFixed(1); // Get the updated human distance from the frontend
             const nnDistance = parseFloat(data.nearest_neighbor.distance).toFixed(1);
             const bfDistance = parseFloat(data.brute_force.distance).toFixed(1);
             const hkDistance = parseFloat(data.held_karp.distance).toFixed(1);
+
+            // Display the values for comparison in a popup
+            const comparisonMessage = `
+                1. Human Distance: ${humanDistance} km
+                2. Nearest Neighbor Distance: ${nnDistance} km
+                3. Brute Force Distance: ${bfDistance} km
+                4. Held-Karp Distance: ${hkDistance} km
+            `;
+            alert(comparisonMessage); // Show the comparison in a popup
 
             // Fix comparison logic: Human route should only be considered as the best if it's shorter or equal
             let resultMessage = "";

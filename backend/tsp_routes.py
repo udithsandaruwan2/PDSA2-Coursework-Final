@@ -313,7 +313,7 @@ def save_win():
         game_session_id = db.record_game_session(
             player_name,
             home_city,
-            selected_cities,
+            human_route,
             nn_distance,
             bf_distance,
             hk_distance,
