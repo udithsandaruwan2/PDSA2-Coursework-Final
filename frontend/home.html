@@ -7,14 +7,31 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Welcome to the Game Menu</h1>
-    
-    <div class="game-menu">
-        <button onclick="startGame('tic_tac_toe')">Tic-Tac-Toe</button>
-        <button onclick="startGame('salesman_problem')">Traveling Salesman Problem</button>
-        <button onclick="startGame('tower_of_hanoi')"> Tower of Hanoi</button>
-        <button onclick="startGame('eight_queens')">Eight queens’ puzzle</button>
-        <button onclick="startGame('knight_problem')">knight's tour Problem</button>
+    <div class="container">
+        <h1>Welcome to the Game Menu</h1>
+        
+        <div class="game-tiles">
+            <div class="game-tile" onclick="startGame('tic_tac_toe')">
+                <img src="images\tic-tac-toe.png" alt="Tic-Tac-Toe">
+                <h2>Tic-Tac-Toe</h2>
+            </div>
+            <div class="game-tile" onclick="startGame('salesman_problem')">
+                <img src="images/salesman.png" alt="Traveling Salesman Problem">
+                <h2>Traveling Salesman Problem</h2>
+            </div>
+            <div class="game-tile" onclick="startGame('tower_of_hanoi')">
+                <img src="images/tower-of-hanoi.jpg" alt="Tower of Hanoi">
+                <h2>Tower of Hanoi</h2>
+            </div>
+            <div class="game-tile" onclick="startGame('eight_queens')">
+                <img src="images/eight-queens.jpg" alt="Eight Queens">
+                <h2>Eight Queens’ Puzzle</h2>
+            </div>
+            <div class="game-tile" onclick="startGame('knight_problem')">
+                <img src="images/knight-tour.jpg" alt="Knight's Tour Problem">
+                <h2>Knight's Tour Problem</h2>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>

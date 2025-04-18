@@ -275,11 +275,13 @@ function submitRoute() {
 }
 
 // Function to compare with algorithms
+// Function to compare with algorithms and check if human found the shortest route
+// Function to compare with algorithms and check if human found the shortest route
 function compareWithAlgorithms() {
     console.log("Compare with Algorithms clicked");
 
     if (playerRoute.length < 1) {
-        console.log("Player route is empty, please submit your route first!");  // Log if the player route is empty
+        console.log("Player route is empty, please submit your route first!");
         alert("Please submit your route first!");
         return;
     }
@@ -354,6 +356,23 @@ function compareWithAlgorithms() {
                 document.getElementById("showHK").checked = true;
             }
 
+            // Now compare the human distance with the algorithm distances
+            const humanDistance = parseFloat(data.human_route.distance).toFixed(2); // Round to 2 decimal places
+            const nnDistance = parseFloat(data.nearest_neighbor.distance).toFixed(2);
+            const bfDistance = parseFloat(data.brute_force.distance).toFixed(2);
+            const hkDistance = parseFloat(data.held_karp.distance).toFixed(2);
+
+            // Check if human distance is equal to or better than any of the algorithm distances
+            let resultMessage = "";
+            if (humanDistance <= nnDistance && humanDistance <= bfDistance && humanDistance <= hkDistance) {
+                resultMessage = "Congratulations! You found the shortest route!";
+            } else {
+                resultMessage = "Nice try! The algorithm found a shorter route.";
+            }
+
+            // Display the result message
+            document.getElementById("resultMessage").innerText = resultMessage;
+
             drawCities();  // Redraw the cities with the updated routes
         })
         .catch(error => {
@@ -365,6 +384,7 @@ function compareWithAlgorithms() {
         alert('Error comparing algorithms. Check the console for more details.');
     }
 }
+
 
 
 
@@ -436,6 +456,7 @@ function resetGame() {
     document.getElementById("nnResult").style.display = "none";
     document.getElementById("bfResult").style.display = "none";
     document.getElementById("hkResult").style.display = "none";
+    document.getElementById("resultMessage").innerText = "";  // Clear result message
 
     // Reset checkboxes with correct IDs
     document.getElementById("showHuman").checked = true;
