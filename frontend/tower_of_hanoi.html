@@ -3,12 +3,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tower Of Hanoi</title>
-    <!-- <link rel="stylesheet" href="styles.css"> -->
+    <title>Tower of Hanoi Game</title>
+    <link rel="stylesheet" href="/static/tower_of_hanoi.css">
 </head>
 <body>
-    <h1>Tower Of Hanoi Game</h1>
-    <script src="script.js"></script>
+    <div class="container">
+        <h1>Tower of Hanoi</h1>
+        
+        <div class="game-modes">
+            <button id="mode-3peg" class="active">3 Pegs</button>
+            <button id="mode-4peg">4 Pegs</button>
+        </div>
+        
+        <div class="game-info">
+            <div class="info-item">
+                <span>Disks: </span>
+                <span id="disk-count">-</span>
+            </div>
+            <div class="info-item">
+                <span>Minimum Moves: </span>
+                <span id="min-moves">-</span>
+            </div>
+            <div class="info-item">
+                <span>Your Moves: </span>
+                <span id="your-moves">0</span>
+            </div>
+        </div>
+        <div class="difficulty-selector">
+            <label for="disk-selector">Number of Disks:</label>
+            <select id="disk-selector">
+                <option value="3">3 (Easy)</option>
+                <option value="4">4 (Easy)</option>
+                <option value="5">5 (Medium)</option>
+                <option value="6">6 (Medium)</option>
+                <option value="7">7 (Hard)</option>
+                <option value="8" selected>8 (Hard)</option>
+                <option value="9">9 (Expert)</option>
+                <option value="10">10 (Expert)</option>
+            </select>
+        </div>
+        <div class="difficulty-info">
+            <p id="difficulty-message">Select a difficulty level to start the game.</p> 
+            <p id="difficulty-warning" class="hidden">Warning: Higher disk counts may take longer to solve.</p>
+        </div>
+        <div class="timer-controls">        
+            <div class="timer-display">
+                <span>Time: </span>
+                <span id="minutes">00</span>:<span id="seconds">00</span>
+            </div>       
+        </div>
+        
+        <div class="game-area">
+            <div id="towers-container">
+                <!-- 3-peg towers -->
+                <div id="three-peg-towers" class="towers">
+                    <div class="tower" id="tower-A">
+                        <div class="peg"></div>
+                        <div class="base"></div>
+                        <div class="tower-label">A</div>
+                    </div>
+                    <div class="tower" id="tower-B">
+                        <div class="peg"></div>
+                        <div class="base"></div>
+                        <div class="tower-label">B</div>
+                    </div>
+                    <div class="tower" id="tower-C">
+                        <div class="peg"></div>
+                        <div class="base"></div>
+                        <div class="tower-label">C</div>
+                    </div>
+                </div>
+                
+                <!-- 4-peg towers -->
+                <div id="four-peg-towers" class="towers hidden">
+                    <div class="tower" id="tower-A-4">
+                        <div class="peg"></div>
+                        <div class="base"></div>
+                        <div class="tower-label">A</div>
+                    </div>
+                    <div class="tower" id="tower-B-4">
+                        <div class="peg"></div>
+                        <div class="base"></div>
+                        <div class="tower-label">B</div>
+                    </div>
+                    <div class="tower" id="tower-C-4">
+                        <div class="peg"></div>
+                        <div class="base"></div>
+                        <div class="tower-label">C</div>
+                    </div>
+                    <div class="tower" id="tower-D-4">
+                        <div class="peg"></div>
+                        <div class="base"></div>
+                        <div class="tower-label">D</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="new-game">New Game</button>
+            <button id="show-solution">Show Solution</button>
+            <button id="submit-solution">Submit Solution</button>
+        </div>
+        
+        <div class="player-input-panel hidden" id="player-input">
+            <h3>Enter your name</h3>
+            <input type="text" id="player-name" placeholder="Your Name">
+            <button id="save-score">Save Score</button>
+            <button id="cancel-save">Cancel</button>
+        </div>
+        <div class="move-history-panel hidden" id="move-history">
+            <h3>Your Move History</h3>
+            <div class="move-list" id="move-history-list"></div>
+        </div>
+        
+        <div class="tabbed-content">
+            <div class="tabs">
+                <button class="tab active" data-tab="scores">High Scores</button>
+                <button class="tab" data-tab="algorithms">Algorithm Comparison</button>
+                <button class="tab" data-tab="instructions">Instructions</button>
+            </div>
+            
+            <div class="tab-content active" id="scores-content">
+                <h3>Top Scores</h3>
+                <table id="scores-table">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Disks</th>
+                            <th>Moves</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scores-body">
+                        <!-- Scores will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="tab-content" id="algorithms-content">
+                <h3>Algorithm Performance</h3>
+                <table id="algorithm-table">
+                    <thead>
+                        <tr>
+                            <th>Disks</th>
+                            <th>Algorithm</th>
+                            <th>Pegs</th>
+                            <th>Avg. Time (ms)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="algorithm-body">
+                        <!-- Algorithm data will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="tab-content" id="instructions-content">
+                <h3>How to Play</h3>
+                <p>The objective is to move all disks from tower A to tower C.</p>
+                <ul>
+                    <li>Only one disk can be moved at a time.</li>
+                    <li>A larger disk cannot be placed on a smaller disk.</li>
+                    <li>You can use the auxiliary tower B to help solve the puzzle.</li>
+                </ul>
+                <p>In the 4-peg version, you have an additional tower D to use.</p>
+                <p><strong>Controls:</strong> Drag and drop disks between towers.</p>
+            </div>
+        </div>
+        
+        <div id="solution-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h3>Solution</h3>
+                <div class="solution-tabs">
+                    <button class="solution-tab active" data-solution="recursive">Recursive (3-peg)</button>
+                    <button class="solution-tab" data-solution="iterative">Iterative (3-peg)</button>
+                    <button class="solution-tab" data-solution="frame_stewart">Frame-Stewart (4-peg)</button>
+                </div>
+                <div class="solution-content">
+                    <div id="recursive-solution" class="solution-panel active">
+                        <p>Execution time: <span id="recursive-time"></span> ms</p>
+                        <div class="moves-list" id="recursive-moves"></div>
+                    </div>
+                    <div id="iterative-solution" class="solution-panel">
+                        <p>Execution time: <span id="iterative-time"></span> ms</p>
+                        <div class="moves-list" id="iterative-moves"></div>
+                    </div>
+                    <div id="frame_stewart-solution" class="solution-panel">
+                        <p>Execution time: <span id="frame-stewart-time"></span> ms</p>
+                        <div class="moves-list" id="frame-stewart-moves"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="success-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h3>Success!</h3>
+                <p id="success-message"></p>
+                <button id="play-again">Play Again</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/tower_of_hanoi.js"></script>
 </body>
 </html>
-

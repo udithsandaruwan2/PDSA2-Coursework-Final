@@ -1,0 +1,353 @@
+/* General Styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Arial', sans-serif;
+}
+
+body {
+    background-color: #f5f5f5;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #2c3e50;
+}
+
+button {
+    padding: 8px 16px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+button.active {
+    background-color: #2c3e50;
+}
+
+/* Game Info */
+.game-info {
+    display: flex;
+    justify-content: space-around;
+    margin: 20px 0;
+    background-color: #ecf0f1;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.game-modes {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.game-modes button {
+    margin: 0 10px;
+}
+
+/* Game Area */
+.game-area {
+    margin: 30px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.towers {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    min-height: 300px;
+    position: relative;
+}
+
+.tower {
+    display: flex !important; /* Force display */
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    width: 25%;
+    height: 300px;
+    position: relative;
+    overflow: visible; /* Ensure disks aren't cut off */
+}
+
+.peg {
+    width: 12px;
+    height: 220px; /* Slightly taller */
+    background-color: #7f8c8d;
+    border-radius: 6px;
+    position: absolute;
+    bottom: 20px;
+    z-index: 1;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Add shadow */
+}
+
+.base {
+    width: 100%;
+    height: 20px;
+    background-color: #7f8c8d;
+    border-radius: 5px;
+    position: absolute;
+    bottom: 0;
+}
+
+.tower-label {
+    position: absolute;
+    bottom: -25px;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+/* Make disks more visible */
+.disk {
+    height: 30px; /* Increased height */
+    min-width: 40px; /* Minimum width */
+    border-radius: 10px;
+    margin-bottom: 5px;
+    cursor: grab;
+    text-align: center;
+    color: white;
+    font-weight: bold;
+    line-height: 30px; /* Match the height */
+    z-index: 2;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); /* Add shadow for depth */
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+
+.disk.dragging {
+    cursor: grabbing;
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Controls */
+.controls {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.controls button {
+    margin: 0 10px;
+}
+
+/* Tabbed Content */
+.tabbed-content {
+    margin-top: 30px;
+}
+
+.tabs {
+    display: flex;
+    border-bottom: 2px solid #ddd;
+}
+
+.tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: #333;
+}
+
+.tab.active {
+    border-bottom: 2px solid #3498db;
+    color: #3498db;
+    font-weight: bold;
+}
+
+.tab-content {
+    display: none;
+    padding: 20px 0;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+table th, table td {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+}
+
+table th {
+    background-color: #f2f2f2;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 100;
+}
+
+.modal.show {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    max-width: 600px;
+    width: 80%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.close {
+    float: right;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+/* Solution styling */
+.solution-tabs {
+    display: flex;
+    margin-bottom: 15px;
+    overflow-x: auto;
+}
+
+.solution-tab {
+    padding: 8px 16px;
+    cursor: pointer;
+    background: none;
+    border: 1px solid #ddd;
+    margin-right: 5px;
+    color: #333;
+}
+
+.solution-tab.active {
+    background-color: #3498db;
+    color: white;
+    border-color: #3498db;
+}
+
+.solution-panel {
+    display: none;
+}
+
+.solution-panel.active {
+    display: block;
+}
+
+.moves-list {
+    margin-top: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 10px;
+}
+
+.move-item {
+    padding: 5px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Player input panel */
+.player-input-panel {
+    background-color: #ecf0f1;
+    padding: 20px;
+    border-radius: 5px;
+    margin: 20px 0;
+    text-align: center;
+}
+
+.player-input-panel input {
+    padding: 8px;
+    width: 200px;
+    margin: 10px 0;
+}
+
+.player-input-panel button {
+    margin: 0 5px;
+}
+
+/* Utility classes */
+.hidden {
+    display: none !important;
+}
+
+/* Animations */
+@keyframes diskMove {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-50px); }
+    100% { transform: translateY(0); }
+}
+
+.animate-move {
+    animation: diskMove 0.5s ease;
+}
+/* Add a prettier animation for completed puzzles */
+@keyframes success-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.success-animation {
+    animation: success-pulse 0.8s ease infinite;
+}
+/* Responsive styles */
+@media (max-width: 768px) {
+    .tower {
+        width: 30%;
+    }
+    
+    #four-peg-towers .tower {
+        width: 22%;
+    }
+    
+    .game-info {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .info-item {
+        margin: 5px 0;
+    }
+    
+    .controls {
+        flex-direction: column;
+    }
+    
+    .controls button {
+        margin: 5px 0;
+    }
+    .disk {
+        min-width: 30px; /* Smaller minimum on mobile */
+    }
+}
