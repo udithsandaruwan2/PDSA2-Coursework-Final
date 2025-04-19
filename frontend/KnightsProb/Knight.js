@@ -278,8 +278,37 @@ function visualizeBothTour(startingPoint) {
       console.log("✅ Backtracking solution path:", data.path);
       visualizeBacktrackSolution(data.path);
       document.getElementById('status').innerText = "❌ You lose this round! No worries, even the best fall sometimes. ";
+      document.getElementById('path').innerText = `Backtracking path: ${JSON.stringify(data.path)}`;
 
+      // Warnsdoff's Path
+      fetch('http://127.0.0.1:5000/api/warnsdorff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: [startingPoint] })
+      })
+      .then(res => res.json())
+      .then(warnData => {
+        if (warnData.success) {
+          console.log("⚡ Warnsdorff solution path:", warnData.path);
+
+          setTimeout(() => {
+            visualizeBacktrackSolution(warnData.path); // Reuse same visualizer
+            document.getElementById('warnsdoffs_path').innerText = `Warnsdoff's path: ${JSON.stringify(warnData.path)}`;
+          }, 20000);
+
+        } else {
+          document.getElementById('warnsdoffs_path').innerText = "No path found using WarnsDoff's algorithm";
+          document.getElementById('status').innerText = "Oop! Seems even I can't solve the problem. So how about we call this game a tie and move on?";
+        }
+      })
+      .catch(err => {
+        console.error("Error during Warnsdorff fallback:", err);
+        alert("Warnsdorff fallback failed.");
+      });
+      
     } else {
+      document.getElementById('path').innerText = `No path found using backtracking algorithm`;
+
       console.warn("❌ Backtracking failed. Trying Warnsdorff...");
 
       // 🔁 Fallback to Warnsdorff’s heuristic
@@ -293,6 +322,7 @@ function visualizeBothTour(startingPoint) {
         if (warnData.success) {
           console.log("⚡ Warnsdorff solution path:", warnData.path);
           visualizeBacktrackSolution(warnData.path); // Reuse same visualizer
+          document.getElementById('path').innerText = "Backtracking path: `${data.path}`";
           document.getElementById('status').innerText = "Backtracking failed path using Warnsdoff's algorithm ";
           document.getElementById('status').innerText = "❌ You lose this round! No worries, even the best fall sometimes. ";
 
