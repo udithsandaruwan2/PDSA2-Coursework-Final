@@ -21,6 +21,7 @@ class TSPDatabase:
                 cursor.execute('DROP TABLE IF EXISTS win_players')
 
                 # Create game_sessions table
+                # Update this inside CREATE TABLE IF NOT EXISTS game_sessions:
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS game_sessions (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,6 +34,9 @@ class TSPDatabase:
                         nn_time REAL NOT NULL,
                         bf_time REAL NOT NULL,
                         hk_time REAL NOT NULL,
+                        nn_route TEXT,  -- NEW
+                        bf_route TEXT,  -- NEW
+                        hk_route TEXT,  -- NEW
                         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
@@ -54,24 +58,40 @@ class TSPDatabase:
         except sqlite3.Error as e:
             print(f"Error creating tables: {e}")
 
-    def record_game_session(self, player_name, home_city, selected_cities, nn_distance, bf_distance, hk_distance, nn_time, bf_time, hk_time):
+    def record_game_session(
+        self, player_name, home_city, selected_cities,
+        nn_distance, bf_distance, hk_distance,
+        nn_time, bf_time, hk_time,
+        nn_route=None, bf_route=None, hk_route=None
+    ):
         try:
             selected_cities_json = json.dumps(selected_cities)
+            nn_route_json = json.dumps(nn_route or [])
+            bf_route_json = json.dumps(bf_route or [])
+            hk_route_json = json.dumps(hk_route or [])
+
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
                     INSERT INTO game_sessions (
                         player_name, home_city, selected_cities,
                         nn_distance, bf_distance, hk_distance,
-                        nn_time, bf_time, hk_time
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (player_name, home_city, selected_cities_json, nn_distance, bf_distance, hk_distance, nn_time, bf_time, hk_time))
+                        nn_time, bf_time, hk_time,
+                        nn_route, bf_route, hk_route
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    player_name, home_city, selected_cities_json,
+                    nn_distance, bf_distance, hk_distance,
+                    nn_time, bf_time, hk_time,
+                    nn_route_json, bf_route_json, hk_route_json
+                ))
                 conn.commit()
                 print(f"Game session inserted successfully with ID {cursor.lastrowid}")
                 return cursor.lastrowid
         except sqlite3.Error as e:
             print(f"Error inserting game session: {e}")
             return None
+
 
     def record_win_player(self, player_name, session_id, human_route, human_distance):
         try:

@@ -252,17 +252,15 @@ def solve_tsp():
         return jsonify({'error': f"Error in solve_tsp: {str(e)}"}), 500
 
 
-
 @tsp_bp.route('/save_game_session', methods=['POST'])
 def save_game_session():
     try:
         data = request.json
         logger.debug(f"Received game session data: {data}")
 
-        # Extract data from the request
         player_name = data.get('player_name')
-        home_city_char = data.get('home_city')  # Now home city is passed as a character (A, B, C)
-        selected_cities = data.get('selected_cities')  # Selected cities are passed as alphabetic chars
+        home_city_char = data.get('home_city')
+        selected_cities = data.get('selected_cities')
         nn_distance = round(float(data.get('nn_distance')), 1)
         bf_distance = round(float(data.get('bf_distance')), 1)
         hk_distance = round(float(data.get('hk_distance')), 1)
@@ -270,8 +268,12 @@ def save_game_session():
         bf_time = round(float(data.get('bf_time')), 1)
         hk_time = round(float(data.get('hk_time')), 1)
 
+        # 🆕 Extract the routes
+        nn_route = data.get('nn_route', [])
+        bf_route = data.get('bf_route', [])
+        hk_route = data.get('hk_route', [])
 
-        # Record the game session
+        # Save to DB including routes
         game_session_id = db.record_game_session(
             player_name,
             home_city_char,
@@ -281,15 +283,17 @@ def save_game_session():
             hk_distance,
             nn_time,
             bf_time,
-            hk_time
+            hk_time,
+            nn_route,
+            bf_route,
+            hk_route
         )
 
-        # Return success message
         return jsonify({"message": "Game session saved successfully!", "session_id": game_session_id}), 200
+
     except Exception as e:
         logger.error(f"Error saving game session: {str(e)}")
         return jsonify({"error": "Error saving game session"}), 500
-
 
 
 
@@ -312,6 +316,10 @@ def save_win():
         bf_time = round(float(data.get('bf_time')), 1)
         hk_time = round(float(data.get('hk_time')), 1)
 
+        nn_route = data.get('nn_route', [])
+        bf_route = data.get('bf_route', [])
+        hk_route = data.get('hk_route', [])
+
         session_id = data.get('session_id')
 
         # Insert the game session data into the database
@@ -324,7 +332,10 @@ def save_win():
             hk_distance,
             nn_time,
             bf_time,
-            hk_time
+            hk_time,
+            nn_route,
+            bf_route,
+            hk_route
         )
 
         # Insert the win player data into the win_players table
@@ -350,8 +361,8 @@ def db_viewer():
         # Get game sessions and win players data
         game_sessions = db.get_all_sessions()
         win_players = db.get_all_win_players()
-        
-        # Prepare HTML for displaying sessions
+
+        # ✅ Initialize the HTML string before appending
         html = """
         <html>
         <head>
@@ -375,11 +386,13 @@ def db_viewer():
                     <th>NN Time</th>
                     <th>BF Time</th>
                     <th>HK Time</th>
+                    <th>NN Route</th>
+                    <th>BF Route</th>
+                    <th>HK Route</th>
                     <th>Timestamp</th>
                 </tr>
         """
-        
-        # Display game sessions
+
         for session in game_sessions:
             html += f"""
                 <tr>
@@ -394,9 +407,12 @@ def db_viewer():
                     <td>{session[8]}</td>
                     <td>{session[9]}</td>
                     <td>{session[10]}</td>
+                    <td>{session[11]}</td>
+                    <td>{session[12]}</td>
+                    <td>{session[13]}</td>
                 </tr>
             """
-        
+
         html += """
             </table>
             <h2>Win Players</h2>
@@ -408,8 +424,7 @@ def db_viewer():
                     <th>Session ID</th>
                 </tr>
         """
-        
-        # Display win players
+
         for win_player in win_players:
             html += f"""
                 <tr>
@@ -419,17 +434,18 @@ def db_viewer():
                     <td>{win_player[3]}</td>
                 </tr>
             """
-        
+
         html += """
             </table>
         </body>
         </html>
         """
-        
+
         return html
 
     except Exception as e:
         return f"Error viewing database: {str(e)}", 500
+
 
 # Global holder (in memory for now)
 distance_matrix = {}

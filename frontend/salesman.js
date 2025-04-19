@@ -33,7 +33,9 @@ function generateCities() {
     nnRoute = [];
     bfRoute = [];
     hkRoute = [];
+    playerPathSegments = [];
     firstPathDrawn = false;
+    gameOver = false;
 
     fetch('http://127.0.0.1:5000/api/get_city_distances')
         .then(res => res.json())
@@ -46,26 +48,34 @@ function generateCities() {
             cities = data.cities;
             distanceMatrix = data.distances;
 
-            // Assign dummy x/y positions for drawing (you can make this prettier later)
             const padding = 100;
-            const spacingX = (canvas.width - 2 * padding) / numCities;
-            const spacingY = (canvas.height - 2 * padding) / numCities;
+            const maxRadius = Math.min(canvas.width, canvas.height) / 2 - 30;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const minDistance = 120;
 
             cities.forEach((city, index) => {
-                const angle = Math.random() * 2 * Math.PI;
-                const maxRadius = Math.min(canvas.width, canvas.height) / 2 - (-30); // 60 = safe margin
-                const radius = Math.random() * maxRadius;
-                const centerX = canvas.width / 2;
-                const centerY = canvas.height / 2;
-            
-                city.x = centerX + radius * Math.cos(angle);
-                city.y = centerY + radius * Math.sin(angle);
+                let validPosition = false;
+                while (!validPosition) {
+                    const angle = Math.random() * 2 * Math.PI;
+                    const radius = Math.random() * maxRadius;
+                    const x = centerX + radius * Math.cos(angle);
+                    const y = centerY + radius * Math.sin(angle);
+                    let tooClose = cities.some(other =>
+                        other.x !== undefined &&
+                        Math.hypot(other.x - x, other.y - y) < minDistance
+                    );
+                    if (!tooClose) {
+                        city.x = x;
+                        city.y = y;
+                        validPosition = true;
+                    }
+                }
             });
-            
 
             homeCityIndex = Math.floor(Math.random() * cities.length);
-            const homeCityChar = String.fromCharCode(65 + homeCityIndex);
-            document.getElementById("homeCity").innerText = `Home City: City ${homeCityChar}`;
+            document.getElementById("homeCity").innerText =
+                `Home City: City ${String.fromCharCode(65 + homeCityIndex)}`;
 
             drawCities();
         })
@@ -73,6 +83,7 @@ function generateCities() {
             console.error("Error generating cities:", err);
         });
 }
+
 
 
 // Function to convert city ID to alphabetic character (e.g., 0 -> A, 1 -> B, etc.)
@@ -100,15 +111,30 @@ function collectPlayerInfo() {
 }
 
 // Update generateCities to prompt for player info on first run
-const originalGenerateCities = generateCities;
-generateCities = function() {
-    if (playerName === "Anonymous") {
-        collectPlayerInfo();
-    }
-    originalGenerateCities();
-}
+
 function drawCities() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 🔹 Draw faint dotted lines between all cities
+    ctx.save();
+    ctx.strokeStyle = 'rgba(150, 150, 150, 0.37)'; // light faded grey
+    ctx.setLineDash([4, 6]); // dotted pattern
+
+    for (let i = 0; i < cities.length; i++) {
+        for (let j = i + 1; j < cities.length; j++) {
+            const cityA = cities[i];
+            const cityB = cities[j];
+
+            ctx.beginPath();
+            ctx.moveTo(cityA.x, cityA.y);
+            ctx.lineTo(cityB.x, cityB.y);
+            ctx.stroke();
+        }
+    }
+
+    ctx.setLineDash([]); // reset to solid lines
+    ctx.restore();
+
 
     //  Draw all cities
     cities.forEach(city => {
@@ -397,13 +423,20 @@ function compareWithAlgorithms() {
     });
 }
 
+// ✅ Add this utility function right here:
+function toCharRoute(route) {
+    return [
+        String.fromCharCode(65 + homeCityIndex),
+        ...route.map(c => String.fromCharCode(65 + c.id)),
+        String.fromCharCode(65 + homeCityIndex)
+    ];
+}
 
 
-// Function to save the game session after algorithm comparison
 function saveGameSessionToDatabase(data, selectedCityIds) {
     const requestData = {
         player_name: playerName,
-        home_city: homeChar, // Use the updated home city here
+        home_city: homeChar,
         selected_cities: selectedCityIds,
         nn_distance: data.nearest_neighbor.distance,
         bf_distance: data.brute_force.distance,
@@ -411,14 +444,14 @@ function saveGameSessionToDatabase(data, selectedCityIds) {
         nn_time: data.nearest_neighbor.time,
         bf_time: data.brute_force.time,
         hk_time: data.held_karp.time,
+        nn_route: data.nearest_neighbor.route.map(c => String.fromCharCode(65 + c.id)),
+        bf_route: data.brute_force.route.map(c => String.fromCharCode(65 + c.id)),
+        hk_route: data.held_karp.route.map(c => String.fromCharCode(65 + c.id)),
     };
 
-    // Send the game session data to the backend to be saved
     fetch('http://127.0.0.1:5000/api/save_game_session', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestData),
     })
     .then(response => response.json())
@@ -429,6 +462,7 @@ function saveGameSessionToDatabase(data, selectedCityIds) {
         console.error('Error saving game session:', error);
     });
 }
+
 
 
 
@@ -446,6 +480,9 @@ function saveWinToDatabase(data, humanDistance, humanRoute) {
         nn_time: data.nearest_neighbor.time,
         bf_time: data.brute_force.time,
         hk_time: data.held_karp.time,
+        nn_route: data.nearest_neighbor.route.map(c => String.fromCharCode(65 + c.id)),
+        bf_route: data.brute_force.route.map(c => String.fromCharCode(65 + c.id)),
+        hk_route: data.held_karp.route.map(c => String.fromCharCode(65 + c.id)),
     };
 
     fetch('http://127.0.0.1:5000/api/save_win', {
@@ -519,33 +556,30 @@ function permute(arr) {
 }
 
 
-// Reset game function
 function resetGame() {
-    gameOver = false;  // Reset gameOver flag
+    playerName = prompt("Please enter your name:", playerName) || playerName;
+
+    gameOver = false;
     playerRoute = [];
     nnRoute = [];
     bfRoute = [];
     hkRoute = [];
-    playerPathSegments = [];  // Clear route segments
-
-    firstPathDrawn = false;  // Reset the first path drawing flag
+    playerPathSegments = [];
+    firstPathDrawn = false;
+    humanDistanceInKm = 0;
 
     document.getElementById("humanResult").innerText = "Human Distance: N/A";
     document.getElementById("nnResult").style.display = "none";
     document.getElementById("bfResult").style.display = "none";
     document.getElementById("hkResult").style.display = "none";
-    document.getElementById("resultMessage").innerText = "";  // Clear result message
+    document.getElementById("resultMessage").innerText = "";
 
-    // Reset checkboxes with correct IDs
     document.getElementById("showHuman").checked = true;
     document.getElementById("showNN").checked = false;
     document.getElementById("showBF").checked = false;
     document.getElementById("showHK").checked = false;
 
-    homeCityIndex = Math.floor(Math.random() * numCities);
-
-    // Generate new cities after reset
-    generateCities();  // Generate new cities after reset
+    generateCities();
 }
 
 // Stop the game from proceeding further after submitting the route or clicking home city
@@ -568,10 +602,13 @@ function addDatabaseViewerLink() {
 
 document.addEventListener("DOMContentLoaded", () => {
     console.log("DOM fully loaded. Initializing game...");
-    generateCities(); // ← this is your wrapped version with player prompt
+
+    // ✅ ONLY PROMPT HERE
+    playerName = prompt("Please enter your name:", "Anonymous") || "Anonymous";
+
+    generateCities();
     addDatabaseViewerLink();
 
-    // Attach checkbox event listeners just in case `onchange` fails
     ['showHuman', 'showNN', 'showBF', 'showHK'].forEach(id => {
         const checkbox = document.getElementById(id);
         if (checkbox) {
@@ -579,6 +616,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
+
 
 
 
