@@ -158,10 +158,13 @@ function submitPath() {
 
         if(algo === "backtracking"){
           visualizeBacktrackingTour(startingPoint); // Using backtracking algortihm to visualize the correct path
-        }else{
+        }else if(algo === "warnsdorff"){
           visualizeWarnsdoffTour(startingPoint) // Using Warnsdoff's algorith to visualize the correct path
+        }else if(algo === "using_both"){
+          visualizeBothTour(startingPoint); // using both algo to get the correct path
+        }else{
+          alert("Please select one or both algorithm");
         }
-        //visualizeBothTour(startingPoint); // using both algo to get the correct path
       }
     })
     .catch(err => {
@@ -290,7 +293,7 @@ function visualizeBothTour(startingPoint) {
         if (warnData.success) {
           console.log("⚡ Warnsdorff solution path:", warnData.path);
           visualizeBacktrackSolution(warnData.path); // Reuse same visualizer
-          alert("Backtracking failed. Shown path uses Warnsdorff’s heuristic.");
+          document.getElementById('status').innerText = "Backtracking failed path using Warnsdoff's algorithm ";
           document.getElementById('status').innerText = "❌ You lose this round! No worries, even the best fall sometimes. ";
 
         } else {
@@ -310,7 +313,7 @@ function visualizeBothTour(startingPoint) {
   });
 }
 
-
+// Same visualizer for all the  three options
 function visualizeBacktrackSolution(path) {
   let index = 0;
 

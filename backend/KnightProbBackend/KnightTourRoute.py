@@ -31,7 +31,7 @@ def validate_path():
         return jsonify({"valid": False, "message": str(e)}), 500"""
 
 
-"""@knight_blueprint.route('/validate', methods=['POST'])
+@knight_blueprint.route('/validate_using_both', methods=['POST'])
 def validate_path():
     data = request.get_json()
     path = data.get('path')
@@ -61,7 +61,7 @@ def validate_path():
         })
 
     except Exception as e:
-        return jsonify({"valid": False, "message": str(e)}), 500"""
+        return jsonify({"valid": False, "message": str(e)}), 500
 
 @knight_blueprint.route('/validate_backtracking', methods=['POST'])
 def validate_backtracking_path():
