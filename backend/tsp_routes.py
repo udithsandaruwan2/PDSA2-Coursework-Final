@@ -425,3 +425,78 @@ def db_viewer():
 
     except Exception as e:
         return f"Error viewing database: {str(e)}", 500
+
+        
+def calculate_distance(a, b):
+    return math.hypot(a['x'] - b['x'], a['y'] - b['y'])
+
+def generate_random_coordinates(num_cities=10, canvas_width=1400, canvas_height=600, km_to_units=0.1):
+    cities = []
+
+    # Distance range in km
+    min_km = 50
+    max_km = 100
+
+    # Convert km to canvas units (e.g., 0.1 = 1 unit = 10 km)
+    min_dist = min_km * km_to_units
+    max_dist = max_km * km_to_units
+
+    # First city at center
+    center_city = {
+        'x': canvas_width / 2,
+        'y': canvas_height / 2,
+        'id': 0
+    }
+    cities.append(center_city)
+
+    for i in range(1, num_cities):
+        valid = False
+        attempts = 0
+        max_attempts = 150000  # Increased for better success rate
+
+        while not valid and attempts < max_attempts:
+            base = random.choice(cities)
+            angle = random.uniform(0, 2 * math.pi)
+            distance = random.uniform(min_dist, max_dist)
+
+            new_x = base['x'] + distance * math.cos(angle)
+            new_y = base['y'] + distance * math.sin(angle)
+
+            if 0 < new_x < canvas_width and 0 < new_y < canvas_height:
+                new_city = {'x': new_x, 'y': new_y, 'id': i}
+
+                # Ensure new city is 50–100 km from *all* others
+                if all(min_dist <= calculate_distance(new_city, city) <= max_dist for city in cities):
+                    cities.append(new_city)
+                    valid = True
+
+            attempts += 1
+
+        if not valid:
+            print(f"[!] Failed to place city {i} after {attempts} attempts.")
+            break
+
+    return cities
+
+@tsp_bp.route('/get_city_distances_from_existing', methods=['POST'])
+def get_city_distances_from_existing():
+    try:
+        data = request.get_json()
+        cities = data.get('cities')
+
+        if not cities or len(cities) < 2:
+            return jsonify({'error': 'Invalid or insufficient cities'}), 400
+
+        distances = {}
+        for i in range(len(cities)):
+            distances[i] = {}
+            for j in range(len(cities)):
+                if i == j:
+                    distances[i][j] = None
+                else:
+                    distances[i][j] = round(calculate_distance(cities[i], cities[j]), 2)
+
+        return jsonify({"distances": distances, "coordinates": cities})
+    except Exception as e:
+        logger.error(f"Error calculating distances from existing: {str(e)}")
+        return jsonify({'error': 'Failed to calculate distances'}), 500

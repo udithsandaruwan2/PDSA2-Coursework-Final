@@ -24,50 +24,73 @@ let humanDistanceInKm = 0; // Initialize human distance variable
 let homeCityIndex = Math.floor(Math.random() * numCities); // Randomly choose a home city index
 const homeChar = String.fromCharCode(65 + homeCityIndex); 
 
-// Function to generate random cities with distances between 50 km and 100 km
-// Function to generate random cities with distances between 50 km and 100 km
 function generateCities() {
     cities = [];
     playerRoute = [];
     nnRoute = [];
     bfRoute = [];
     hkRoute = [];
-    
+
+    const kmToUnit = 1; // 1 km = 10 canvas units
+    const minDist = 50 * kmToUnit;
+    const maxDist = 100 * kmToUnit;
     const margin = 20;
-    const maxWidth = canvas.width - margin * 2;
-    const maxHeight = canvas.height - margin * 2;
 
-    // Function to calculate random distances between 50 and 100 kilometers
-    function getRandomDistance() {
-        const minDistanceKm = 50;
-        const maxDistanceKm = 100;
-        const randomDistanceKm = Math.random() * (maxDistanceKm - minDistanceKm) + minDistanceKm;
-        return randomDistanceKm * 10; // Convert to units
-    }
-    
-    for (let i = 0; i < numCities; i++) {
-        const x = Math.random() * maxWidth + margin;
-        const y = Math.random() * maxHeight + margin;
-        
-        cities.push({
-            x: Math.min(Math.max(x, margin), canvas.width - margin),
-            y: Math.min(Math.max(y, margin), canvas.height - margin),
-            id: i,
-            distanceToNextCity: getRandomDistance()
-        });
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+
+    // Start with center city
+    const center = {
+        x: canvasWidth / 2,
+        y: canvasHeight / 2,
+        id: 0
+    };
+    cities.push(center);
+
+    for (let i = 1; i < numCities; i++) {
+        let placed = false;
+        let attempts = 0;
+
+        while (!placed && attempts < 150000) {
+            const base = cities[Math.floor(Math.random() * cities.length)];
+            const angle = Math.random() * Math.PI * 2;
+            const distance = minDist + Math.random() * (maxDist - minDist);
+
+            const newX = base.x + distance * Math.cos(angle);
+            const newY = base.y + distance * Math.sin(angle);
+
+            if (
+                newX > margin && newX < canvasWidth - margin &&
+                newY > margin && newY < canvasHeight - margin
+            ) {
+                const newCity = { x: newX, y: newY, id: i };
+
+                // Check distances to all previous cities
+                let valid = cities.every(city => {
+                    const dx = newCity.x - city.x;
+                    const dy = newCity.y - city.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    return dist >= minDist && dist <= maxDist;
+                });
+
+                if (valid) {
+                    cities.push(newCity);
+                    placed = true;
+                }
+            }
+
+            attempts++;
+        }
+
+        if (!placed) {
+            console.warn(`Failed to place city ${i} after ${attempts} attempts.`);
+            break;
+        }
     }
 
-    // Highlight the Home City
-    const homeCityChar = String.fromCharCode(65 + homeCityIndex); // Convert home city id to alphabet (A, B, C, ...)
+    homeCityIndex = Math.floor(Math.random() * cities.length);
+    const homeCityChar = String.fromCharCode(65 + homeCityIndex);
     document.getElementById("homeCity").innerText = `Home City: City ${homeCityChar}`;
-
-    // Reset UI elements
-    document.getElementById("humanResult").innerText = "Human Distance: N/A";
-    document.getElementById("nnResult").style.display = "none";
-    document.getElementById("bfResult").style.display = "none";
-    document.getElementById("hkResult").style.display = "none";
-    document.getElementById("toggles").style.display = "none";
-    
     drawCities();
 }
 
@@ -104,14 +127,13 @@ generateCities = function() {
     originalGenerateCities();
 }
 
-// Function to draw cities
 function drawCities() {
-    // Ensure canvas is cleared only if the first path isn't drawn yet
+    // Ensure canvas is cleared
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     console.log("Drawing cities...");
 
-    // Draw cities
+    // Draw cities using coordinates from the backend
     cities.forEach(city => {
         console.log(`Drawing city with id: ${city.id}`);
 
@@ -138,28 +160,26 @@ function drawCities() {
         }
     });
 
-    // Draw routes based on toggles
+    // Handle drawing the paths (if any)
     const isGameOver = gameOver;
     if (document.getElementById("showHuman")?.checked && playerRoute.length > 1) {
-        // If game is over, close the loop (draw return to home)
         if (isGameOver) {
             drawPath([cities[homeCityIndex], ...playerRoute, cities[homeCityIndex]], "blue", false);
         } else {
-            // Draw human path but not close the loop (do not close the loop between home and first city)
             drawPath([cities[homeCityIndex], ...playerRoute], "blue", false);
         }
     }
 
     if (document.getElementById("showNN")?.checked && nnRoute.length > 1) {
-        drawPath([cities[homeCityIndex], ...nnRoute], "green", true);  // Include home city at start and end
+        drawPath([cities[homeCityIndex], ...nnRoute], "green", true);
     }
 
     if (document.getElementById("showBF")?.checked && bfRoute.length > 1) {
-        drawPath([cities[homeCityIndex], ...bfRoute], "purple", true);  // Include home city at start and end
+        drawPath([cities[homeCityIndex], ...bfRoute], "purple", true);
     }
 
     if (document.getElementById("showHK")?.checked && hkRoute.length > 1) {
-        drawPath([cities[homeCityIndex], ...hkRoute], "orange", true);  // Include home city at start and end
+        drawPath([cities[homeCityIndex], ...hkRoute], "orange", true);
     }
 }
 
@@ -589,40 +609,6 @@ function stopGame() {
     document.getElementById("humanResult").innerText += " (Game Over)";
 }
 
-// Add viewStats function to display database statistics
-function viewStats() {
-    fetch('http://127.0.0.1:5000/api/view_stats')
-        .then(response => response.json())
-        .then(data => { 
-            const statsDiv = document.getElementById('statsContent');
-            const stats = data.stats;
-            
-            if (!stats || stats.length === 0) {
-                statsDiv.innerHTML = '<p>No statistics available yet.</p>';
-                return;
-            }
-
-            let html = '<table class="stats-table">';
-            html += '<tr><th>Algorithm</th><th>Avg Time (ms)</th><th>Min Time (ms)</th><th>Max Time (ms)</th><th>Avg Distance</th></tr>';
-            
-            stats.forEach(stat => {
-                const [algo, avgTime, minTime, maxTime, avgDist] = stat;
-                html += '<tr><th>Algorithm</th><th>Avg Time (ms)</th><th>Min Time (ms)</th><th>Max Time (ms)</th><th>Avg Distance</th></tr>';
-
-            });
-            
-            html += '</table>';
-            statsDiv.innerHTML = html;
-            document.getElementById('statsResult').style.display = 'block';
-        })
-        .catch(error => {
-            console.error('Error fetching stats:', error);
-            document.getElementById('statsContent').innerHTML = 
-                '<p class="error">Error loading statistics. Check console for details.</p>';
-            document.getElementById('statsResult').style.display = 'block';
-        });
-}
-
 
 // Add link to database viewer
 function addDatabaseViewerLink() {
@@ -640,4 +626,58 @@ window.onload = function() {
     console.log("Generating cities...");
     generateCities();
     addDatabaseViewerLink();
+}
+
+function viewCityDistances() {
+    if (!cities || cities.length < 2) {
+        alert("No cities available to show distances.");
+        return;
+    }
+
+    // Send current canvas cities to the backend
+    fetch('http://127.0.0.1:5000/api/get_city_distances_from_existing', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ cities }), // Send current canvas city data
+    })
+    .then(response => response.json())
+    .then(data => {
+        const distances = data.distances;
+        const coordinates = data.coordinates;
+
+        const tableDiv = document.getElementById('statsContent');
+        let html = "<h2>City Distance Table</h2>";
+        html += "<table class='distance-table' style='border-collapse: collapse; width: 100%; text-align: center;'>";
+
+        html += "<tr><th>City</th>";
+        for (let i = 0; i < cities.length; i++) {
+            html += `<th>${String.fromCharCode(65 + i)}</th>`;
+        }
+        html += "</tr>";
+
+        for (let i = 0; i < cities.length; i++) {
+            html += `<tr><td>${String.fromCharCode(65 + i)}</td>`;
+            for (let j = 0; j < cities.length; j++) {
+                if (i === j) {
+                    html += "<td>---</td>";
+                } else {
+                    const dist = distances[i][j]?.toFixed(2) || "N/A";
+                    html += `<td>${dist} km</td>`;
+                }
+            }
+            html += "</tr>";
+        }
+
+        html += "</table>";
+        tableDiv.innerHTML = html;
+        document.getElementById('statsResult').style.display = 'block';
+    })
+    .catch(error => {
+        console.error("Error fetching distances:", error);
+        document.getElementById('statsContent').innerHTML =
+            '<p class="error">Error loading statistics. Check console for details.</p>';
+        document.getElementById('statsResult').style.display = 'block';
+    });
 }

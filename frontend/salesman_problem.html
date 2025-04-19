@@ -8,13 +8,14 @@
 <body>
     <h1>Travelling Salesman Problem</h1>
     <p id="resultMessage" style="font-size: 18px; font-weight: bold;"></p>
-    <canvas id="cityCanvas" width="800" height="500"></canvas>
+    <canvas id="cityCanvas" width="1400" height="600"></canvas>
 
     <div id="controls">
         <button onclick="resetGame()">Reset</button>
         <button onclick="submitRoute()">Submit Route</button>
         <button onclick="compareWithAlgorithms()">Compare with Algorithms</button>
-        <button onclick="viewStats()">View Statistics</button>
+        <button id="viewStatsButton" onclick="viewCityDistances()">View Statistics</button>
+
     </div>
 
     <div id="toggles" style="display: none;">
@@ -39,8 +40,7 @@
     </div>
 
     <div id="statsResult" style="display: none;">
-        <h3>Algorithm Statistics</h3>
-        <div id="statsContent"></div>
+        <div id="statsContent"></div> <!-- Where the table will be displayed -->
     </div>
 
     <script src="salesman.js"></script>
