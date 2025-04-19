@@ -16,23 +16,6 @@ logger = logging.getLogger(__name__)
 tsp_bp = Blueprint('tsp', __name__, url_prefix='/api')
 db = TSPDatabase()
 
-def calculate_distance(a, b):
-    # Calculate Euclidean distance
-    distance_in_units = math.hypot(a['x'] - b['x'], a['y'] - b['y'])
-    # Scale by 10 if the canvas units represent 10 km each
-    distance_in_km = distance_in_units / 10  # Adjust if needed
-    return distance_in_km
-
-# Update total_path_distance to scale the distance properly
-def total_path_distance(path):
-    # This function calculates the total distance for a given route
-    distance = 0
-    for i in range(len(path)):
-        a = path[i]
-        b = path[(i + 1) % len(path)]  # This ensures the loop is closed (return to home)
-        distance += calculate_distance(a, b)
-    return distance
-
 
 
 def total_path_distance(path):
@@ -54,10 +37,13 @@ def tsp_nearest_neighbor(cities):
         a = path[i]
         b = path[(i + 1) % len(path)]
         d = calculate_distance(a, b)
-        if i == len(path) - 1:
-            logger.debug(f"NN: {a['id']} -> {b['id']} (last to home): {d:.4f} km")
+        if d is None:
+            logger.debug(f"NN: {a['id']} -> {b['id']}: Distance is None")
         else:
-            logger.debug(f"NN: {a['id']} -> {b['id']}: {d:.4f} km")
+            if i == len(path) - 1:
+                logger.debug(f"NN: {a['id']} -> {b['id']} (last to home): {d:.4f} km")
+            else:
+                logger.debug(f"NN: {a['id']} -> {b['id']}: {d:.4f} km")
     path_distance = total_path_distance(path)
     execution_time = time.time() - start_time
 
@@ -156,7 +142,15 @@ def tsp_held_karp(cities):
 def solve_tsp():
     try:
         data = request.json
-        logger.debug(f"Received request data: {data}")
+        
+        distance_matrix_data = data.get('distances')
+        if not distance_matrix_data:
+            logger.error("Distance matrix not provided!")
+            return jsonify({'error': 'Distance matrix is required'}), 400
+
+        set_distance_matrix(distance_matrix_data)
+
+
 
         cities = data.get('cities')  # Full list of cities
         player_name = data.get('player_name', 'Anonymous')
@@ -197,6 +191,16 @@ def solve_tsp():
         if len(selected_cities) < 2:
             return jsonify({'error': 'At least two cities must be selected for the path'}), 400
 
+        # ✅ VALIDATE city IDs exist in the distance matrix
+# ✅ VALIDATE city IDs exist in the distance matrix
+        for city in selected_cities:
+            city_id_str = str(city['id'])
+            if city_id_str not in distance_matrix:
+                logger.error(f"City ID {city_id_str} not found in distance_matrix keys!")
+                logger.debug(f"Available keys in distance_matrix: {list(distance_matrix.keys())}")
+                return jsonify({'error': f"City ID {city_id_str} not in distance matrix"}), 400
+
+
         # Perform TSP calculations only on selected cities (which include home city at both ends)
         nn_path, nn_distance, nn_time = tsp_nearest_neighbor(selected_cities)
         bf_path, bf_distance, bf_time = tsp_brute_force(selected_cities)
@@ -208,17 +212,17 @@ def solve_tsp():
 
         response_data = {
             'nearest_neighbor': {
-                'route': json.dumps(nn_path),
+                'route': nn_path,
                 'distance': nn_distance,
                 'time': nn_time
             },
             'brute_force': {
-                'route': json.dumps(bf_path),
+                'route': bf_path,
                 'distance': bf_distance,
                 'time': bf_time
             },
             'held_karp': {
-                'route': json.dumps(hk_path),
+                'route': hk_path,
                 'distance': hk_distance,
                 'time': hk_time
             },
@@ -244,6 +248,7 @@ def solve_tsp():
 
     except Exception as e:
         logger.error(f"Error in solve_tsp: {str(e)}")
+        logger.error(traceback.format_exc())
         return jsonify({'error': f"Error in solve_tsp: {str(e)}"}), 500
 
 
@@ -426,77 +431,66 @@ def db_viewer():
     except Exception as e:
         return f"Error viewing database: {str(e)}", 500
 
-        
-def calculate_distance(a, b):
-    return math.hypot(a['x'] - b['x'], a['y'] - b['y'])
+# Global holder (in memory for now)
+distance_matrix = {}
 
-def generate_random_coordinates(num_cities=10, canvas_width=1400, canvas_height=600, km_to_units=0.1):
-    cities = []
-
-    # Distance range in km
-    min_km = 50
-    max_km = 100
-
-    # Convert km to canvas units (e.g., 0.1 = 1 unit = 10 km)
-    min_dist = min_km * km_to_units
-    max_dist = max_km * km_to_units
-
-    # First city at center
-    center_city = {
-        'x': canvas_width / 2,
-        'y': canvas_height / 2,
-        'id': 0
+def set_distance_matrix(matrix):
+    global distance_matrix
+    distance_matrix = {
+        str(k): {str(sub_k): v for sub_k, v in sub.items()}
+        for k, sub in matrix.items()
     }
-    cities.append(center_city)
 
-    for i in range(1, num_cities):
-        valid = False
-        attempts = 0
-        max_attempts = 150000  # Increased for better success rate
 
-        while not valid and attempts < max_attempts:
-            base = random.choice(cities)
-            angle = random.uniform(0, 2 * math.pi)
-            distance = random.uniform(min_dist, max_dist)
 
-            new_x = base['x'] + distance * math.cos(angle)
-            new_y = base['y'] + distance * math.sin(angle)
+def calculate_distance(a, b):
+    global distance_matrix
 
-            if 0 < new_x < canvas_width and 0 < new_y < canvas_height:
-                new_city = {'x': new_x, 'y': new_y, 'id': i}
+    a_id = str(a['id'])
+    b_id = str(b['id'])
 
-                # Ensure new city is 50–100 km from *all* others
-                if all(min_dist <= calculate_distance(new_city, city) <= max_dist for city in cities):
-                    cities.append(new_city)
-                    valid = True
-
-            attempts += 1
-
-        if not valid:
-            print(f"[!] Failed to place city {i} after {attempts} attempts.")
-            break
-
-    return cities
-
-@tsp_bp.route('/get_city_distances_from_existing', methods=['POST'])
-def get_city_distances_from_existing():
     try:
-        data = request.get_json()
-        cities = data.get('cities')
+        d = distance_matrix[a_id][b_id]
+        if d is None:
+            logger.warning(f"Distance between {a_id} and {b_id} is None (possibly same city)")
+            return 0.0
+        return d
+    except KeyError as e:
+        logger.error(f"City ID {e} not found in distance_matrix keys!")
+        logger.debug(f"Available keys in distance_matrix: {list(distance_matrix.keys())}")
+        raise
 
-        if not cities or len(cities) < 2:
-            return jsonify({'error': 'Invalid or insufficient cities'}), 400
 
-        distances = {}
-        for i in range(len(cities)):
-            distances[i] = {}
-            for j in range(len(cities)):
-                if i == j:
-                    distances[i][j] = None
-                else:
-                    distances[i][j] = round(calculate_distance(cities[i], cities[j]), 2)
+def generate_city_list():
+    return [{'id': i, 'name': chr(65 + i), 'x': 0, 'y': 0} for i in range(10)]  # dummy x/y added
 
-        return jsonify({"distances": distances, "coordinates": cities})
+
+
+def generate_random_distance_matrix(num_cities=10, min_km=50, max_km=100):
+    matrix = {}
+    for i in range(num_cities):
+        matrix[i] = {}
+        for j in range(num_cities):
+            if i == j:
+                matrix[i][j] = None
+            elif j in matrix and i in matrix[j]:
+                # Mirror the upper triangle to lower (symmetric)
+                matrix[i][j] = matrix[j][i]
+            else:
+                matrix[i][j] = round(random.uniform(min_km, max_km), 2)
+    return matrix
+
+@tsp_bp.route('/get_city_distances', methods=['GET'])
+def get_city_distances():
+    try:
+        cities = generate_city_list()
+        matrix = generate_random_distance_matrix()
+        set_distance_matrix(matrix)  # <- This sets the global matrix
+
+        return jsonify({
+            'cities': cities,
+            'distances': matrix
+        })
     except Exception as e:
-        logger.error(f"Error calculating distances from existing: {str(e)}")
-        return jsonify({'error': 'Failed to calculate distances'}), 500
+        logger.error(f"Error generating random city distances: {str(e)}")
+        return jsonify({'error': 'Failed to generate distances'}), 500

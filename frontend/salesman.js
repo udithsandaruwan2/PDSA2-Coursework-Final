@@ -12,6 +12,10 @@ let playerRoute = [];
 let nnRoute = [];
 let bfRoute = [];
 let hkRoute = [];
+let distanceMatrix = {};
+let playerPathSegments = [];  // Each element: { from: cityA, to: cityB }
+
+
 
 // Add player info variables at the top
 let playerName = "Anonymous";
@@ -25,74 +29,51 @@ let homeCityIndex = Math.floor(Math.random() * numCities); // Randomly choose a 
 const homeChar = String.fromCharCode(65 + homeCityIndex); 
 
 function generateCities() {
-    cities = [];
     playerRoute = [];
     nnRoute = [];
     bfRoute = [];
     hkRoute = [];
+    firstPathDrawn = false;
 
-    const kmToUnit = 1; // 1 km = 10 canvas units
-    const minDist = 50 * kmToUnit;
-    const maxDist = 100 * kmToUnit;
-    const margin = 20;
-
-    const canvasWidth = canvas.width;
-    const canvasHeight = canvas.height;
-
-    // Start with center city
-    const center = {
-        x: canvasWidth / 2,
-        y: canvasHeight / 2,
-        id: 0
-    };
-    cities.push(center);
-
-    for (let i = 1; i < numCities; i++) {
-        let placed = false;
-        let attempts = 0;
-
-        while (!placed && attempts < 150000) {
-            const base = cities[Math.floor(Math.random() * cities.length)];
-            const angle = Math.random() * Math.PI * 2;
-            const distance = minDist + Math.random() * (maxDist - minDist);
-
-            const newX = base.x + distance * Math.cos(angle);
-            const newY = base.y + distance * Math.sin(angle);
-
-            if (
-                newX > margin && newX < canvasWidth - margin &&
-                newY > margin && newY < canvasHeight - margin
-            ) {
-                const newCity = { x: newX, y: newY, id: i };
-
-                // Check distances to all previous cities
-                let valid = cities.every(city => {
-                    const dx = newCity.x - city.x;
-                    const dy = newCity.y - city.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    return dist >= minDist && dist <= maxDist;
-                });
-
-                if (valid) {
-                    cities.push(newCity);
-                    placed = true;
-                }
+    fetch('http://127.0.0.1:5000/api/get_city_distances')
+        .then(res => res.json())
+        .then(data => {
+            if (!data || !data.cities || !data.distances) {
+                console.error("Invalid city data:", data);
+                return;
             }
 
-            attempts++;
-        }
+            cities = data.cities;
+            distanceMatrix = data.distances;
 
-        if (!placed) {
-            console.warn(`Failed to place city ${i} after ${attempts} attempts.`);
-            break;
-        }
-    }
+            // Assign dummy x/y positions for drawing (you can make this prettier later)
+            const padding = 100;
+            const spacingX = (canvas.width - 2 * padding) / numCities;
+            const spacingY = (canvas.height - 2 * padding) / numCities;
 
-    homeCityIndex = Math.floor(Math.random() * cities.length);
-    const homeCityChar = String.fromCharCode(65 + homeCityIndex);
-    document.getElementById("homeCity").innerText = `Home City: City ${homeCityChar}`;
-    drawCities();
+            cities.forEach((city, index) => {
+                const angle = Math.random() * 2 * Math.PI;
+                const maxRadius = Math.min(canvas.width, canvas.height) / 2 - (-30); // 60 = safe margin
+                const radius = Math.random() * maxRadius;
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+            
+                city.x = centerX + radius * Math.cos(angle);
+                city.y = centerY + radius * Math.sin(angle);
+            });
+            
+
+            homeCityIndex = Math.floor(Math.random() * cities.length);
+            const homeCityChar = String.fromCharCode(65 + homeCityIndex);
+            document.getElementById("homeCity").innerText = `Home City: City ${homeCityChar}`;
+
+            drawCities();
+        })
+        .catch(err => {
+            console.error("Error generating cities:", err);
+        });
 }
+
 
 // Function to convert city ID to alphabetic character (e.g., 0 -> A, 1 -> B, etc.)
 function getCityChar(cityId) {
@@ -126,62 +107,56 @@ generateCities = function() {
     }
     originalGenerateCities();
 }
-
 function drawCities() {
-    // Ensure canvas is cleared
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    console.log("Drawing cities...");
-
-    // Draw cities using coordinates from the backend
+    //  Draw all cities
     cities.forEach(city => {
-        console.log(`Drawing city with id: ${city.id}`);
-
         ctx.beginPath();
         ctx.arc(city.x, city.y, cityRadius, 0, Math.PI * 2);
-
-        // Set color: if it's the home city, make it a different color (e.g., red)
-        if (city.id === homeCityIndex) {
-            ctx.fillStyle = "#ff0000";  // Red color for home city
-        } else {
-            ctx.fillStyle = "#ff4136";  // Default color for other cities
-        }
+        ctx.fillStyle = city.id === homeCityIndex ? "#ff0000" : "#ff4136";
         ctx.fill();
         ctx.stroke();
 
-        // Draw city ID text as A, B, C, ...
-        const cityLabel = String.fromCharCode(65 + city.id); // 65 is 'A'
+        const label = String.fromCharCode(65 + city.id);
         ctx.fillStyle = "black";
-        ctx.fillText(`${cityLabel}`, city.x + 10, city.y);
-
-        // If it's the home city, draw "Home" text beneath it
-        if (city.id === homeCityIndex) {
-            ctx.fillText("Home", city.x - 10, city.y + 20);  // Display "Home" beneath the home city
-        }
+        ctx.fillText(label, city.x + 10, city.y);
+        if (city.id === homeCityIndex) ctx.fillText("Home", city.x - 10, city.y + 20);
     });
 
-    // Handle drawing the paths (if any)
-    const isGameOver = gameOver;
-    if (document.getElementById("showHuman")?.checked && playerRoute.length > 1) {
-        if (isGameOver) {
-            drawPath([cities[homeCityIndex], ...playerRoute, cities[homeCityIndex]], "blue", false);
-        } else {
-            drawPath([cities[homeCityIndex], ...playerRoute], "blue", false);
-        }
-    }
-
+    // ✅ Draw algorithm paths (conditionally)
     if (document.getElementById("showNN")?.checked && nnRoute.length > 1) {
-        drawPath([cities[homeCityIndex], ...nnRoute], "green", true);
+        drawPath([cities[homeCityIndex], ...nnRoute, cities[homeCityIndex]], "green", true);
     }
-
     if (document.getElementById("showBF")?.checked && bfRoute.length > 1) {
-        drawPath([cities[homeCityIndex], ...bfRoute], "purple", true);
+        drawPath([cities[homeCityIndex], ...bfRoute, cities[homeCityIndex]], "purple", true);
+    }
+    if (document.getElementById("showHK")?.checked && hkRoute.length > 1) {
+        drawPath([cities[homeCityIndex], ...hkRoute, cities[homeCityIndex]], "orange", true);
     }
 
-    if (document.getElementById("showHK")?.checked && hkRoute.length > 1) {
-        drawPath([cities[homeCityIndex], ...hkRoute], "orange", true);
+    // 🔷 Draw human route if toggle is on
+    if (document.getElementById("showHuman")?.checked) {
+        ctx.strokeStyle = "blue";
+        ctx.lineWidth = 2;
+        ctx.fillStyle = "black";
+        ctx.font = "12px Arial";
+
+        playerPathSegments.forEach(segment => {
+            const { from, to } = segment;
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(to.x, to.y);
+            ctx.stroke();
+
+            const midX = (from.x + to.x) / 2;
+            const midY = (from.y + to.y) / 2;
+            const dist = getDistance(from, to);
+            ctx.fillText(`${dist.toFixed(1)} km`, midX + 5, midY - 5);
+        });
     }
 }
+
 
 
 
@@ -235,15 +210,15 @@ canvas.addEventListener("click", (event) => {
                 if (cities[homeCityIndex] && city) {
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     drawCities();
-                    drawPath([cities[homeCityIndex], city], "blue", false);
-                    firstPathDrawn = true;
+                    playerPathSegments.push({ from: cities[homeCityIndex], to: city });
                     playerRoute.push(city);
+                    firstPathDrawn = true;
+                    
+                    drawCities();  // 👈 Force immediate redraw, including the line
+                    
                     console.log(`City ${city.id} added to player route.`);
-                    // Do NOT call drawCities() at the end of the handler for the first city
-                    return; // Prevent further code and the final drawCities() call
-                } else {
-                    console.error("Error: Home or first city is undefined.");
                     return;
+                    
                 }
             }
 
@@ -253,7 +228,19 @@ canvas.addEventListener("click", (event) => {
                 console.log(`City ${city.id} added to player route.`);
                 if (playerRoute.length > 1) {
                     console.log(`Drawing path from city ${playerRoute[playerRoute.length - 2].id} to city ${city.id}`);
-                    drawPath([playerRoute[playerRoute.length - 2], playerRoute[playerRoute.length - 1]], "blue", false);
+                    const from = playerRoute[playerRoute.length - 2];
+                    const to = playerRoute[playerRoute.length - 1];
+                    playerPathSegments.push({ from, to });  // Track this segment
+                    // Show distance label on the segment
+                    const a = playerRoute[playerRoute.length - 2];
+                    const b = playerRoute[playerRoute.length - 1];
+                    const midX = (a.x + b.x) / 2;
+                    const midY = (a.y + b.y) / 2;
+                    const dist = getDistance(a, b);
+                    ctx.fillStyle = "black";
+                    ctx.font = "12px Arial";
+                    ctx.fillText(`${dist.toFixed(1)} km`, midX + 5, midY - 5);
+
                 }
             }
 
@@ -266,10 +253,9 @@ canvas.addEventListener("click", (event) => {
 
 
 function getDistance(a, b) {
-    // Calculate Euclidean distance between two cities
-    const distanceInUnits = Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
-    return distanceInUnits; // If the canvas is scaled by 10 km each
+    return distanceMatrix[a.id][b.id] || 0;
 }
+
 
 function calculateTotalDistance(route) {
     let dist = 0;
@@ -297,10 +283,14 @@ function submitRoute() {
     if (playerRoute.length > 0) {
         drawPath([playerRoute[playerRoute.length - 1], cities[homeCityIndex]], "blue", false);
     }
+    // Push final leg to playerPathSegments for rendering with distance
+    const from = playerRoute[playerRoute.length - 1];
+    const to = cities[homeCityIndex];
+    playerPathSegments.push({ from, to });
 
     // Now calculate the distance, ensuring to include home-to-first-city and last-city-to-home
     const humanDistanceInUnits = calculateTotalDistance(fullHumanRoute);  // This should include the return to home
-    humanDistanceInKm = humanDistanceInUnits / 10;  // Update the global variable with the calculated value
+    humanDistanceInKm = humanDistanceInUnits;  // Update the global variable with the calculated value
 
     console.log(`Full Human Route: `, fullHumanRoute);  // Log the full human route for debugging
     console.log(`Human Distance: `, humanDistanceInKm);
@@ -329,131 +319,84 @@ function compareWithAlgorithms() {
         return;
     }
 
-    // Prepare the cities array for backend: include home city and user-selected cities
-    const homeCityObj = cities[homeCityIndex];  // This gives the full city object (A to J)
+    const homeCityObj = cities[homeCityIndex];
     const selectedCityIds = playerRoute.map(city => city.id);
     const selectedCities = cities.filter(city => selectedCityIds.includes(city.id));
-    const citiesForBackend = [homeCityObj, ...selectedCities];
+    const selectedCityChars = selectedCities.map(city => String.fromCharCode(65 + city.id));
+    const homeCityChar = String.fromCharCode(65 + homeCityObj.id);
 
-    // Map the selected city IDs to letters (A, B, C, ...)
-    const selectedCityChars = selectedCities.map(city => String.fromCharCode(65 + city.id));  // A to J
+    const requestData = {
+        cities: cities.map(c => ({ id: c.id, name: c.name })),
+        player_name: playerName,
+        home_city: homeCityChar,
+        human_route: selectedCityChars,
+        distances: distanceMatrix
+    };
 
-    // Map the home city to a letter (A, B, C, ...)
-    const homeCityChar = String.fromCharCode(65 + homeCityObj.id);  // Convert to A, B, C...
+    fetch('http://127.0.0.1:5000/api/solve_tsp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        return response.json();
+    })
+    .then(data => {
+        document.getElementById("toggles").style.display = "block";
 
-    // Log the selected cities for debugging
-    console.log("Selected Cities for Algorithms (with home):", citiesForBackend);
+        // 🧠 Convert returned city IDs/objects to full city objects with x/y
+        const idToCity = (c) => typeof c === 'object' ? cities.find(city => city.id === c.id) : cities.find(city => city.id === c);
 
-    try {
-        const requestData = {
-            cities: citiesForBackend,  // Send home city + user-selected cities
-            player_name: playerName,
-            home_city: homeCityChar,  // Send the home city as a character (A, B, C, etc.)
-            human_route: selectedCityChars  // Send the human route with city letters (A, B, C, etc.)
-        };
-        console.log("Data being sent to the backend:", requestData);
+        if (data.nearest_neighbor && !data.nearest_neighbor.error) {
+            nnRoute = data.nearest_neighbor.route.map(idToCity);
+            document.getElementById("nnResult").innerText =
+                `Nearest Neighbor: ${data.nearest_neighbor.distance.toFixed(1)} km (Time: ${(data.nearest_neighbor.time * 1000).toFixed(2)} ms)`;
+            document.getElementById("nnResult").style.display = "block";
+            document.getElementById("showNN").checked = true;
+        }
 
-        // Make the API call to compare the algorithms
-        fetch('http://127.0.0.1:5000/api/solve_tsp', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestData)
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            // Defensive: check for missing data
-            if (!data || !data.nearest_neighbor || !data.brute_force || !data.held_karp) {
-                console.error('Missing algorithm results in response:', data);
-                alert('Error: Missing algorithm results.');
-                return;
-            }
+        if (data.brute_force && !data.brute_force.error) {
+            bfRoute = data.brute_force.route.map(idToCity);
+            document.getElementById("bfResult").innerText =
+                `Brute Force: ${data.brute_force.distance.toFixed(1)} km (Time: ${(data.brute_force.time * 1000).toFixed(2)} ms)`;
+            document.getElementById("bfResult").style.display = "block";
+            document.getElementById("showBF").checked = true;
+        }
 
-            // Process results and display them
-            document.getElementById("toggles").style.display = "block";
+        if (data.held_karp && !data.held_karp.error) {
+            hkRoute = data.held_karp.route.map(idToCity);
+            document.getElementById("hkResult").innerText =
+                `Held-Karp: ${data.held_karp.distance.toFixed(1)} km (Time: ${(data.held_karp.time * 1000).toFixed(2)} ms)`;
+            document.getElementById("hkResult").style.display = "block";
+            document.getElementById("showHK").checked = true;
+        }
 
-            if (data.nearest_neighbor && !data.nearest_neighbor.error) {
-                console.log("Nearest Neighbor result:", data.nearest_neighbor);
-                nnRoute = JSON.parse(data.nearest_neighbor.route);  // Parse route if it's JSON
-                document.getElementById("nnResult").innerText =
-                    `Nearest Neighbor: ${data.nearest_neighbor.distance.toFixed(1)} km (Time: ${(data.nearest_neighbor.time * 1000).toFixed(2)} ms)`;
-                document.getElementById("nnResult").style.display = "block";
-                document.getElementById("showNN").checked = true;
-            }
+        const humanDistance = humanDistanceInKm.toFixed(1);
+        const nnDistance = parseFloat(data.nearest_neighbor.distance).toFixed(1);
+        const bfDistance = parseFloat(data.brute_force.distance).toFixed(1);
+        const hkDistance = parseFloat(data.held_karp.distance).toFixed(1);
 
-            if (data.brute_force && !data.brute_force.error) {
-                console.log("Brute Force result:", data.brute_force);
-                bfRoute = JSON.parse(data.brute_force.route);  // Parse route if it's JSON
-                document.getElementById("bfResult").innerText =
-                    `Brute Force: ${data.brute_force.distance.toFixed(1)} km (Time: ${(data.brute_force.time * 1000).toFixed(2)} ms)`;
-                document.getElementById("bfResult").style.display = "block";
-                document.getElementById("showBF").checked = true;
-            }
+        let resultMessage = "";
+        if (humanDistance <= nnDistance && humanDistance <= bfDistance && humanDistance <= hkDistance) {
+            resultMessage = humanDistance < nnDistance || humanDistance < bfDistance || humanDistance < hkDistance
+                ? "Congratulations! You found the shortest route!"
+                : "Congratulations! You matched the best algorithm route!";
+            saveWinToDatabase(data, humanDistance, selectedCityChars);
+        } else {
+            resultMessage = "Nice try! The algorithm found a shorter route.";
+            saveGameSessionToDatabase(data, selectedCityChars);
+        }
 
-            if (data.held_karp && !data.held_karp.error) {
-                console.log("Held-Karp result:", data.held_karp);
-                hkRoute = JSON.parse(data.held_karp.route);  // Parse route if it's JSON
-                document.getElementById("hkResult").innerText =
-                    `Held-Karp: ${data.held_karp.distance.toFixed(1)} km (Time: ${(data.held_karp.time * 1000).toFixed(2)} ms)`;
-                document.getElementById("hkResult").style.display = "block";
-                document.getElementById("showHK").checked = true;
-            }
-
-            // Now compare the human distance with the algorithm distances
-            // Inside compareWithAlgorithms()
-            const humanDistance = humanDistanceInKm.toFixed(1); // Get the updated human distance from the frontend
-            const nnDistance = parseFloat(data.nearest_neighbor.distance).toFixed(1);
-            const bfDistance = parseFloat(data.brute_force.distance).toFixed(1);
-            const hkDistance = parseFloat(data.held_karp.distance).toFixed(1);
-
-            // Display the values for comparison in a popup
-            const comparisonMessage = `
-                1. Human Distance: ${humanDistance} km
-                2. Nearest Neighbor Distance: ${nnDistance} km
-                3. Brute Force Distance: ${bfDistance} km
-                4. Held-Karp Distance: ${hkDistance} km
-            `;
-            alert(comparisonMessage); // Show the comparison in a popup
-
-            // Fix comparison logic: Human route should only be considered as the best if it's shorter or equal
-            let resultMessage = "";
-            if (humanDistance <= nnDistance && humanDistance <= bfDistance && humanDistance <= hkDistance) {
-                if (humanDistance < nnDistance || humanDistance < bfDistance || humanDistance < hkDistance) {
-                    resultMessage = "Congratulations! You found the shortest route!";
-                    saveWinToDatabase(data, humanDistance, selectedCityChars); // Trigger saving win data
-                } else {
-                    resultMessage = "Congratulations! You matched the best algorithm route!";
-                    // Save the win data when the human matches or finds the best algorithm route
-                    saveWinToDatabase(data, humanDistance, selectedCityChars); // Trigger saving win data
-                }
-            } else {
-                resultMessage = "Nice try! The algorithm found a shorter route.";
-                saveGameSessionToDatabase(data, selectedCityChars);  // Save the session after the comparison
-            }
-
-            // Display the result message
-            document.getElementById("resultMessage").innerText = resultMessage;
-
-            drawCities();  // Redraw the cities with the updated routes
-
-            // Record the game session after the algorithms are compared
-            
-        })
-        .catch(error => {
-            console.error('Error during algorithm comparison:', error);
-            alert('Error comparing algorithms. Check the console for more details.');
-        });
-    } catch (error) {
-        console.error('Unexpected Error:', error);
+        document.getElementById("resultMessage").innerText = resultMessage;
+        drawCities();  // 🔁 Redraw with all updated routes
+    })
+    .catch(error => {
+        console.error('Error during algorithm comparison:', error);
         alert('Error comparing algorithms. Check the console for more details.');
-    }
+    });
 }
+
 
 
 // Function to save the game session after algorithm comparison
@@ -583,6 +526,8 @@ function resetGame() {
     nnRoute = [];
     bfRoute = [];
     hkRoute = [];
+    playerPathSegments = [];  // Clear route segments
+
     firstPathDrawn = false;  // Reset the first path drawing flag
 
     document.getElementById("humanResult").innerText = "Human Distance: N/A";
@@ -621,12 +566,21 @@ function addDatabaseViewerLink() {
     document.getElementById('result').appendChild(link);
 }
 
-// Update initial load to add database viewer link
-window.onload = function() {
-    console.log("Generating cities...");
-    generateCities();
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("DOM fully loaded. Initializing game...");
+    generateCities(); // ← this is your wrapped version with player prompt
     addDatabaseViewerLink();
-}
+
+    // Attach checkbox event listeners just in case `onchange` fails
+    ['showHuman', 'showNN', 'showBF', 'showHK'].forEach(id => {
+        const checkbox = document.getElementById(id);
+        if (checkbox) {
+            checkbox.addEventListener('change', drawCities);
+        }
+    });
+});
+
+
 
 function viewCityDistances() {
     if (!cities || cities.length < 2) {
@@ -634,50 +588,31 @@ function viewCityDistances() {
         return;
     }
 
-    // Send current canvas cities to the backend
-    fetch('http://127.0.0.1:5000/api/get_city_distances_from_existing', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ cities }), // Send current canvas city data
-    })
-    .then(response => response.json())
-    .then(data => {
-        const distances = data.distances;
-        const coordinates = data.coordinates;
+    const tableDiv = document.getElementById('statsContent');
+    let html = "<h2>City Distance Table</h2>";
+    html += "<table class='distance-table' style='border-collapse: collapse; width: 100%; text-align: center;'>";
 
-        const tableDiv = document.getElementById('statsContent');
-        let html = "<h2>City Distance Table</h2>";
-        html += "<table class='distance-table' style='border-collapse: collapse; width: 100%; text-align: center;'>";
+    html += "<tr><th>City</th>";
+    for (let i = 0; i < cities.length; i++) {
+        html += `<th>${String.fromCharCode(65 + i)}</th>`;
+    }
+    html += "</tr>";
 
-        html += "<tr><th>City</th>";
-        for (let i = 0; i < cities.length; i++) {
-            html += `<th>${String.fromCharCode(65 + i)}</th>`;
+    for (let i = 0; i < cities.length; i++) {
+        html += `<tr><td>${String.fromCharCode(65 + i)}</td>`;
+        for (let j = 0; j < cities.length; j++) {
+            if (i === j) {
+                html += "<td>---</td>";
+            } else {
+                const dist = distanceMatrix[i][j]?.toFixed(2) || "N/A";
+                html += `<td>${dist} km</td>`;
+            }
         }
         html += "</tr>";
+    }
 
-        for (let i = 0; i < cities.length; i++) {
-            html += `<tr><td>${String.fromCharCode(65 + i)}</td>`;
-            for (let j = 0; j < cities.length; j++) {
-                if (i === j) {
-                    html += "<td>---</td>";
-                } else {
-                    const dist = distances[i][j]?.toFixed(2) || "N/A";
-                    html += `<td>${dist} km</td>`;
-                }
-            }
-            html += "</tr>";
-        }
-
-        html += "</table>";
-        tableDiv.innerHTML = html;
-        document.getElementById('statsResult').style.display = 'block';
-    })
-    .catch(error => {
-        console.error("Error fetching distances:", error);
-        document.getElementById('statsContent').innerHTML =
-            '<p class="error">Error loading statistics. Check console for details.</p>';
-        document.getElementById('statsResult').style.display = 'block';
-    });
+    html += "</table>";
+    tableDiv.innerHTML = html;
+    document.getElementById('statsResult').style.display = 'block';
 }
+
