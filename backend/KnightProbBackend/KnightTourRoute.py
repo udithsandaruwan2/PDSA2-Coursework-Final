@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 import random
 import sqlite3
 import os
+import time
 from .KnightTour import validate_player_path, solve_knights_tour, warnsdorff_tour, validate_warnsdorff_tour
 
 knight_blueprint = Blueprint('knight', __name__, url_prefix='/api')
@@ -115,14 +116,18 @@ def solve_from_start_position():
     except (ValueError, TypeError):
         print("Start position format error")
         return jsonify({"success": False, "message": "Start position must contain integers"}), 400
-
+    
+    start_time = time.time()
     solution = solve_knights_tour(start_x, start_y)
+    end_time = time.time()
+    backtrack_elapsed_time = end_time - start_time
+
     print("Backtracking solution found:", solution)
 
     if solution:
-        return jsonify({"success": True, "path": solution})
+        return jsonify({"success": True, "path": solution, "backtrack_elapsed_time": backtrack_elapsed_time})
     else:
-        return jsonify({"success": False, "message": "No solution possible from this position"})
+        return jsonify({"success": False, "message": "No solution possible from this position", "backtrack_elapsed_time": backtrack_elapsed_time})
 
 
 ### Submit winner to db
@@ -182,10 +187,46 @@ def solve_from_start_position_warnsdoff():
         print("Start position format error")
         return jsonify({"success": False, "message": "Start position must contain integers"}), 400
 
+    start_time = time.time()
     solution = warnsdorff_tour(start_x, start_y)
+    end_time = time.time()
+    warnsdoff_elapsed_time = end_time - start_time
+
     print("Warndoff'Rule solution found:", solution)
 
     if solution:
-        return jsonify({"success": True, "path": solution})
+        return jsonify({"success": True, "path": solution, "warnsdoff_elapsed_time": warnsdoff_elapsed_time})
     else:
-        return jsonify({"success": False, "message": "No solution possible from this position"})
+        return jsonify({"success": False, "message": "No solution possible from this position", "warnsdoff_elapsed_time": warnsdoff_elapsed_time})
+
+
+@knight_blueprint.route('/save', methods=['POST'])
+def save_performance():
+    data = request.get_json()
+    print("Received performance data:", data)
+
+    try:
+        backtracking_time = data['backtracking_time']
+        warnsdoffs_time = data['warnsdoffs_time']
+
+        # ✅ Use an absolute path relative to this file
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(base_dir, '../../database/knightstour.db')
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)  # Ensure the folder exists
+
+        # ✅ Connect with the safe path
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            INSERT INTO performance_metrics (backtracking_algorithm, warnsdoffs_algorithm)
+            VALUES (?, ?)
+        ''', (backtracking_time, warnsdoffs_time))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({"success": True, "message": "Performance metrics saved successfully"})
+    except Exception as e:
+        print("Error saving performance data:", str(e))
+        return jsonify({"success": False, "message": "Failed to save performance data"}), 400

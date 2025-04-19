@@ -227,8 +227,12 @@ function visualizeBacktrackingTour(startingPoint) {
       console.log("✅ Backtracking solution path:", data.path);
       visualizeBacktrackSolution(data.path);
       document.getElementById('status').innerText = "❌ You lose this round! No worries, even the best fall sometimes. ";
+      const backtrackingTime = data.backtrack_elapsed_time;
+      savePerformanceData(backtrackingTime, null);
 
     } else {
+      const backtrackingTime = data.backtrack_elapsed_time;
+      savePerformanceData(backtrackingTime, null);
       document.getElementById('status').innerText = "Backtracking Algorithm can't find a solution due to recursion depth";
     }
   })
@@ -252,8 +256,12 @@ function visualizeWarnsdoffTour(startingPoint) {
       console.log("✅ Warnsdoff's solution path:", data.path);
       visualizeBacktrackSolution(data.path);
       document.getElementById('status').innerText = "❌ You lose this round! No worries, even the best fall sometimes. ";
+      const warnsdoffsTime = data.warnsdoff_elapsed_time;
+      savePerformanceData(null, warnsdoffsTime);
 
     } else {
+      const warnsdoffsTime = data.warnsdoff_elapsed_time;
+      savePerformanceData(null, warnsdoffsTime);
       document.getElementById('status').innerText = "Warnsdoff's Algorithm can't find a solution due to recursion depth";
     }
   })
@@ -267,6 +275,9 @@ function visualizeWarnsdoffTour(startingPoint) {
 function visualizeBothTour(startingPoint) {
   console.log("Sending starting point to backend:", startingPoint);
 
+  let backtrackingTime;
+  let warnsdoffTime;
+
   fetch('http://127.0.0.1:5000/api/solve', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -279,6 +290,8 @@ function visualizeBothTour(startingPoint) {
       visualizeBacktrackSolution(data.path);
       document.getElementById('status').innerText = "❌ You lose this round! No worries, even the best fall sometimes. ";
       document.getElementById('path').innerText = `Backtracking path: ${JSON.stringify(data.path)}`;
+
+      backtrackingTime = data.backtrack_elapsed_time;
 
       // Warnsdoff's Path
       fetch('http://127.0.0.1:5000/api/warnsdorff', {
@@ -296,20 +309,26 @@ function visualizeBothTour(startingPoint) {
             document.getElementById('warnsdoffs_path').innerText = `Warnsdoff's path: ${JSON.stringify(warnData.path)}`;
           }, 20000);
 
+          warnsdoffTime = warnData.warnsdoff_elapsed_time;
         } else {
           document.getElementById('warnsdoffs_path').innerText = "No path found using WarnsDoff's algorithm";
           document.getElementById('status').innerText = "Oop! Seems even I can't solve the problem. So how about we call this game a tie and move on?";
+          warnsdoffTime = warnData.warnsdoff_elapsed_time;
         }
+
+        savePerformanceData(backtrackingTime, warnsdoffTime);
       })
       .catch(err => {
         console.error("Error during Warnsdorff fallback:", err);
         alert("Warnsdorff fallback failed.");
+        savePerformanceData(backtrackingTime, warnsdoffTime);
       });
-      
+
     } else {
       document.getElementById('path').innerText = `No path found using backtracking algorithm`;
 
       console.warn("❌ Backtracking failed. Trying Warnsdorff...");
+      backtrackingTime = data.backtrack_elapsed_time;
 
       // 🔁 Fallback to Warnsdorff’s heuristic
       fetch('http://127.0.0.1:5000/api/warnsdorff', {
@@ -325,15 +344,19 @@ function visualizeBothTour(startingPoint) {
           document.getElementById('path').innerText = "Backtracking path: `${data.path}`";
           document.getElementById('status').innerText = "Backtracking failed path using Warnsdoff's algorithm ";
           document.getElementById('status').innerText = "❌ You lose this round! No worries, even the best fall sometimes. ";
-
+          warnsdoffTime = warnData.warnsdoff_elapsed_time;
         } else {
           alert("No solution found even with Warnsdorff.");
+          warnsdoffTime = warnData.warnsdoff_elapsed_time;
           document.getElementById('status').innerText = "Oop! Seems even I can't solve the problem. So how about we call this game a tie and move on?";
         }
+
+        savePerformanceData(backtrackingTime, warnsdoffTime);
       })
       .catch(err => {
         console.error("Error during Warnsdorff fallback:", err);
         alert("Warnsdorff fallback failed.");
+        savePerformanceData(backtrackingTime, warnsdoffTime);
       });
     }
   })
@@ -342,6 +365,7 @@ function visualizeBothTour(startingPoint) {
     alert("Failed to reach the server.");
   });
 }
+
 
 // Same visualizer for all the  three options
 function visualizeBacktrackSolution(path) {
@@ -358,7 +382,32 @@ function visualizeBacktrackSolution(path) {
     selectedPath = path.slice(0, index + 1); // Update selectedPath to match progress
     drawBoard([row, col]);
     index++;
-  }, 300); // Delay in ms between steps (adjust speed here)
+  }, 400); // Delay in ms between steps (adjust speed here)
 }
 
 
+function savePerformanceData(backtrackingTime, warnsdoffTime) {
+  console.log("📊 Saving performance data...");
+  console.log("⏱️ Backtracking time:", backtrackingTime);
+  console.log("⏱️ Warnsdorff time:", warnsdoffTime );
+
+  fetch('http://127.0.0.1:5000/api/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      backtracking_time: backtrackingTime,
+      warnsdoffs_time: warnsdoffTime
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      console.log("✅ Performance data saved successfully.");
+    } else {
+      console.warn("⚠️ Failed to save performance data:", data.message);
+    }
+  })
+  .catch(err => {
+    console.error("❌ Error saving performance data:", err);
+  });
+}

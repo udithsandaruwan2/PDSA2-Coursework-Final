@@ -8,14 +8,12 @@ os.makedirs("database", exist_ok=True)
 conn = sqlite3.connect("../../database/knightstour.db")
 cursor = conn.cursor()
 
-# Create the winners table
+
 cursor.execute('''
-    CREATE TABLE IF NOT EXISTS winners (
+    CREATE TABLE IF NOT EXISTS performance_metrics (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        start_x INTEGER NOT NULL,
-        start_y INTEGER NOT NULL,
-        path TEXT NOT NULL,
+        backtracking_algorithm REAL ,
+        warnsdoffs_algorithm REAL,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )
 ''')
@@ -24,4 +22,4 @@ cursor.execute('''
 conn.commit()
 conn.close()
 
-print("✅ Database and 'winners' table created successfully.")
+print("✅ Database and 'performance' table created successfully.")
