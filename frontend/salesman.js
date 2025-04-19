@@ -436,7 +436,7 @@ function toCharRoute(route) {
 function saveGameSessionToDatabase(data, selectedCityIds) {
     const requestData = {
         player_name: playerName,
-        home_city: homeChar,
+        home_city: String.fromCharCode(65 + homeCityIndex),
         selected_cities: selectedCityIds,
         nn_distance: data.nearest_neighbor.distance,
         bf_distance: data.brute_force.distance,
@@ -472,7 +472,7 @@ function saveWinToDatabase(data, humanDistance, humanRoute) {
         session_id: data.session_id,
         player_name: playerName,
         home_city: homeChar,
-        human_route: humanRoute,
+        human_route: [homeChar, ...humanRoute, homeChar],
         human_distance: humanDistance,
         nn_distance: data.nearest_neighbor.distance,
         bf_distance: data.brute_force.distance,
