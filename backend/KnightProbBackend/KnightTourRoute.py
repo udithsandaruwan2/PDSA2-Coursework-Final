@@ -31,7 +31,7 @@ def validate_path():
         return jsonify({"valid": False, "message": str(e)}), 500"""
 
 
-@knight_blueprint.route('/validate', methods=['POST'])
+"""@knight_blueprint.route('/validate', methods=['POST'])
 def validate_path():
     data = request.get_json()
     path = data.get('path')
@@ -61,7 +61,41 @@ def validate_path():
         })
 
     except Exception as e:
+        return jsonify({"valid": False, "message": str(e)}), 500"""
+
+@knight_blueprint.route('/validate_backtracking', methods=['POST'])
+def validate_backtracking_path():
+    data = request.get_json()
+    path = data.get('path')
+
+    if not path:
+        return jsonify({"valid": False, "message": "Path not provided"}), 400
+
+    try:
+        path = [(int(p[0]), int(p[1])) for p in path]
+        valid, message = validate_player_path(path)
+
+        return jsonify({"valid": valid, "message": message})
+    except Exception as e:
         return jsonify({"valid": False, "message": str(e)}), 500
+
+
+@knight_blueprint.route('/validate_warnsdorff', methods=['POST'])
+def validate_warnsdorff_path():
+    data = request.get_json()
+    path = data.get('path')
+
+    if not path:
+        return jsonify({"valid": False, "message": "Path not provided"}), 400
+
+    try:
+        path = [(int(p[0]), int(p[1])) for p in path]
+        valid, message = validate_warnsdorff_tour(path)
+
+        return jsonify({"valid": valid, "message": message})
+    except Exception as e:
+        return jsonify({"valid": False, "message": str(e)}), 500
+
 
 
 # 🔁 Backtrack Visualization

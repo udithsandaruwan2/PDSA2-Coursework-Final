@@ -84,7 +84,7 @@ function selectMove(row, col) {
   }
 }
 
-function submitPath() {
+/*function submitPath() {
   fetch('http://localhost:5000/api/validate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -118,6 +118,58 @@ function submitPath() {
     document.getElementById('status').innerText = "❌ Error communicating with the server.";
   });
 }
+*/
+
+
+function submitPath() {
+  const selectedRadio = document.querySelector('input[name="algo"]:checked');
+  if (!selectedRadio) return;
+
+  const algo = selectedRadio.value; // "backtracking" or "warnsdorff"
+  const endpoint = `http://localhost:5000/api/validate_${algo}`;
+
+  // Log or display the selected algorithm
+  console.log(`Selected Algorithm: ${algo}`);
+  // Or show on UI (optional)
+  document.getElementById('status').innerText = `🔍 Validating using: ${algo === 'backtracking' ? 'Backtracking Algorithm' : 'Warnsdorff’s Rule'}...`;
+
+  fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: selectedPath })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.valid) {
+        document.getElementById('status').innerText = "✅ Congrats! You Won. Enter your name to save 🎉";
+        document.getElementById('winner-form').style.display = 'block';
+      } else if (data.message.includes("Incomplete Tour. But you are close! A solution is still possible from here.")) {
+        const tryAgain = confirm(data.message + "\nDo you want to continue playing from here?");
+        if (tryAgain) {
+          selectedPath.pop();
+          const lastPos = selectedPath[selectedPath.length - 1];
+          drawBoard(lastPos);
+        } else {
+          document.getElementById('status').innerText = "❌ You chose to quit. Game over.";
+        }
+      } else {
+        document.getElementById('status').innerText = "😕 Hmm... seems like you're out of valid moves. Let's double-check with my algorithms before we call this a loss...";
+        const startingPoint = selectedPath[0];
+
+        if(algo === "backtracking"){
+          visualizeBacktrackingTour(startingPoint); // Using backtracking algortihm to visualize the correct path
+        }else{
+          visualizeWarnsdoffTour(startingPoint) // Using Warnsdoff's algorith to visualize the correct path
+        }
+        //visualizeBothTour(startingPoint); // using both algo to get the correct path
+      }
+    })
+    .catch(err => {
+      console.error("Error validating path:", err);
+      document.getElementById('status').innerText = "❌ Error communicating with the server.";
+    });
+}
+
 
 //Submitting winner to the database
 function submitWinner() {
@@ -159,6 +211,57 @@ function submitWinner() {
 
 
 function visualizeBacktrackingTour(startingPoint) {
+  console.log("Sending starting point to backend:", startingPoint);
+
+  fetch('http://127.0.0.1:5000/api/solve', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: [startingPoint] })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      console.log("✅ Backtracking solution path:", data.path);
+      visualizeBacktrackSolution(data.path);
+      document.getElementById('status').innerText = "❌ You lose this round! No worries, even the best fall sometimes. ";
+
+    } else {
+      document.getElementById('status').innerText = "Backtracking Algorithm can't find a solution due to recursion depth";
+    }
+  })
+  .catch(err => {
+    console.error("Error reaching the backend:", err);
+    alert("Failed to reach the server.");
+  });
+}
+
+function visualizeWarnsdoffTour(startingPoint) {
+  console.log("Sending starting point to backend:", startingPoint);
+
+  fetch('http://127.0.0.1:5000/api/warnsdorff', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: [startingPoint] })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      console.log("✅ Warnsdoff's solution path:", data.path);
+      visualizeBacktrackSolution(data.path);
+      document.getElementById('status').innerText = "❌ You lose this round! No worries, even the best fall sometimes. ";
+
+    } else {
+      document.getElementById('status').innerText = "Warnsdoff's Algorithm can't find a solution due to recursion depth";
+    }
+  })
+  .catch(err => {
+    console.error("Error reaching the backend:", err);
+    alert("Failed to reach the server.");
+  });
+}
+
+
+function visualizeBothTour(startingPoint) {
   console.log("Sending starting point to backend:", startingPoint);
 
   fetch('http://127.0.0.1:5000/api/solve', {
