@@ -12,8 +12,8 @@ DB_PATH = os.path.abspath(os.path.join(BASE_DIR, '../../database/knightstour.db'
 
 @knight_blueprint.route('/start', methods=['GET'])
 def start_game():
-    start_x = random.randint(0, 7)
-    start_y = random.randint(0, 7)
+    start_x = 0#random.randint(0, 7)
+    start_y = 0#random.randint(0, 7)
     return jsonify({"start": {"x": start_x, "y": start_y}})
 
 """@knight_blueprint.route('/validate', methods=['POST'])
