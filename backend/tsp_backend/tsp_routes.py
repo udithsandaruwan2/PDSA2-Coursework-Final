@@ -53,29 +53,53 @@ def tsp_nearest_neighbor(cities):
 def tsp_brute_force(cities):
     start_time = time.time()
 
-    best_path = None
-    best_distance = float('inf')
+    # Initialize best solution tracker
+    best_result = {
+        'path': None,
+        'distance': float('inf')
+    }
 
-    # Brute force all permutations of cities (including the home city at both ends)
-    for perm in permutations(cities[1:-1]):  # Exclude the home city from permutations
-        full_perm = [cities[0]] + list(perm) + [cities[0]]  # Add home city at both ends
-        logger.debug("Brute Force candidate path:")
-        for i in range(len(full_perm)):
-            a = full_perm[i]
-            b = full_perm[(i + 1) % len(full_perm)]
-            d = calculate_distance(a, b)
-            if i == len(full_perm) - 1:
-                logger.debug(f"BF: {a['id']} -> {b['id']} (last to home): {d:.4f} km")
-            else:
-                logger.debug(f"BF: {a['id']} -> {b['id']}: {d:.4f} km")
-        distance = total_path_distance(full_perm)
-        if distance < best_distance:
-            best_path = full_perm
-            best_distance = distance
+    def backtrack(current_path, visited, current_distance):
+        # Base case: if all cities visited (excluding return to home)
+        if len(current_path) == len(cities) - 1:
+            # complete cycle by returning to home city
+            home = cities[0]
+            last_city = current_path[-1]
+            return_leg = calculate_distance(last_city, home)
+            total_distance = current_distance + return_leg
+
+            full_path = [home] + current_path + [home]
+
+            logger.debug("BF (Recursive) candidate path:")
+            for i in range(len(full_path) - 1):
+                a = full_path[i]
+                b = full_path[i + 1]
+                logger.debug(f"BF: {a['id']} -> {b['id']}: {calculate_distance(a, b):.4f} km")
+
+            if total_distance < best_result['distance']:
+                best_result['distance'] = total_distance
+                best_result['path'] = full_path
+            return
+
+        # Recurse to unvisited cities
+        for city in cities[1:]:  # Skip cities[0] which is home city
+            if city['id'] not in visited:
+                visited.add(city['id'])
+                last_city = current_path[-1] if current_path else cities[0]
+                dist = calculate_distance(last_city, city)
+                current_path.append(city)
+
+                backtrack(current_path, visited, current_distance + dist)
+
+                current_path.pop()
+                visited.remove(city['id'])
+
+    # Start backtracking from home city
+    backtrack([], set(), 0)
 
     execution_time = time.time() - start_time
+    return best_result['path'], best_result['distance'], execution_time
 
-    return best_path, best_distance, execution_time
 
 
 def tsp_held_karp(cities):
