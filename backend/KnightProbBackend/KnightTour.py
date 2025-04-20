@@ -46,7 +46,13 @@ move_x = [2, 1, -1, -2, -2, -1, 1, 2]
 move_y = [1, 2, 2, 1, -1, -2, -2, -1]
 
 # 🔄 Recursive tour possibility check using backtracking
-def is_tour_possible_from(x, y, visited, step):
+def is_tour_possible_from(x, y, visited, step, timeout=60, start_time=None):
+    if start_time is None:
+        start_time = time.time()
+
+    if time.time() - start_time > timeout:
+        return False  # Timeout reached
+
     if step == 64:
         return True
 
@@ -55,7 +61,7 @@ def is_tour_possible_from(x, y, visited, step):
         next_y = y + move_y[i]
         if is_unvisited(next_x, next_y, visited):
             visited[next_x][next_y] = step
-            if is_tour_possible_from(next_x, next_y, visited, step + 1):
+            if is_tour_possible_from(next_x, next_y, visited, step + 1, timeout, start_time):
                 return True
             visited[next_x][next_y] = -1  # Backtrack
 
@@ -124,11 +130,19 @@ def validate_warnsdorff_tour(path):
             return False, f"Invalid coordinate in path at index {i}"
         visited[x][y] = i
 
+    # ✅ New: Check if each move is a valid knight move
+    for i in range(1, len(path)):
+        x1, y1 = path[i - 1]
+        x2, y2 = path[i]
+        dx = abs(x1 - x2)
+        dy = abs(y1 - y2)
+        if not ((dx == 2 and dy == 1) or (dx == 1 and dy == 2)):
+            return False, f"Invalid knight move from {path[i - 1]} to {path[i]}"
+
     step = len(path)
 
     if step == 64:
         return True, "Tour already completed (64 steps) — no need to validate further."
-
 
     last_x, last_y = path[-1]
 
@@ -136,6 +150,7 @@ def validate_warnsdorff_tour(path):
         return False, "Incomplete Tour. But you are close! A solution is still possible from here."
     else:
         return False, "Warnsdorff says: No complete tour is possible from your current position."
+
 
     # Knight's move offsets
 move_x = [2, 1, -1, -2, -2, -1, 1, 2]
