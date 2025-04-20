@@ -26,7 +26,10 @@ const numCities = 10;
 let humanDistanceInKm = 0; // Initialize human distance variable
 // Generate random cities
 let homeCityIndex = Math.floor(Math.random() * numCities); // Randomly choose a home city index
-const homeChar = String.fromCharCode(65 + homeCityIndex); 
+function getHomeChar() {
+    return String.fromCharCode(65 + homeCityIndex);
+}
+
 
 function generateCities() {
     playerRoute = [];
@@ -436,7 +439,7 @@ function toCharRoute(route) {
 function saveGameSessionToDatabase(data, selectedCityIds) {
     const requestData = {
         player_name: playerName,
-        home_city: String.fromCharCode(65 + homeCityIndex),
+        home_city: getHomeChar(),
         selected_cities: selectedCityIds,
         nn_distance: data.nearest_neighbor.distance,
         bf_distance: data.brute_force.distance,
@@ -471,8 +474,8 @@ function saveWinToDatabase(data, humanDistance, humanRoute) {
     const requestData = {
         session_id: data.session_id,
         player_name: playerName,
-        home_city: homeChar,
-        human_route: [homeChar, ...humanRoute, homeChar],
+        home_city: getHomeChar(),
+        human_route: [getHomeChar(), ...humanRoute, getHomeChar()],
         human_distance: humanDistance,
         nn_distance: data.nearest_neighbor.distance,
         bf_distance: data.brute_force.distance,
@@ -555,7 +558,6 @@ function permute(arr) {
     );
 }
 
-
 function resetGame() {
     playerName = prompt("Please enter your name:", playerName) || playerName;
 
@@ -579,8 +581,10 @@ function resetGame() {
     document.getElementById("showBF").checked = false;
     document.getElementById("showHK").checked = false;
 
-    generateCities();
+    // Defer to avoid DOM lockups
+    setTimeout(generateCities, 50);
 }
+
 
 // Stop the game from proceeding further after submitting the route or clicking home city
 function stopGame() {

@@ -17,8 +17,8 @@ class TSPDatabase:
                 cursor = conn.cursor()
 
                 #Delete existing tables if they exist
-                cursor.execute('DROP TABLE IF EXISTS game_sessions')
-                cursor.execute('DROP TABLE IF EXISTS win_players')
+                #cursor.execute('DROP TABLE IF EXISTS game_sessions')
+                #cursor.execute('DROP TABLE IF EXISTS win_players')
 
                 # Create game_sessions table
                 # Update this inside CREATE TABLE IF NOT EXISTS game_sessions:
