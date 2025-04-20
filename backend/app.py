@@ -27,6 +27,11 @@ def handle_error(error):
     return {'error': 'Internal server error'}, 500
 
 if __name__ == '__main__':
-    toh_db.init_db()
+    try:
+        toh_db.init_db()
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {str(e)}")
+        raise
     logger.info("Starting Flask application")
     app.run(debug=True, use_reloader=False)

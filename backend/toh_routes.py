@@ -1,10 +1,10 @@
-from flask import Blueprint, jsonify, request
-import toh_db
-import random
-import time
-import json
+from flask import Blueprint, jsonify, request  # Ensure Flask is installed in your environment
+import toh_db  # Ensure toh_db is used in the code
+import random  # Used for generating random disk count
+import time  # Used for measuring algorithm performance
+import json  # Ensure JSON is used or remove if unnecessary
 import logging
-import traceback
+import traceback  # Used for logging detailed error traces
 
 logger = logging.getLogger(__name__)
 
@@ -82,18 +82,12 @@ def frame_stewart_algorithm(n, source, aux1, aux2, destination):
         moves.append([1, source, destination])
         return moves
 
-    # Move k disks to aux1 using all four pegs
     moves.extend(frame_stewart_algorithm(k, source, aux2, destination, aux1))
-    
-    # Move remaining n-k disks to destination using three pegs
     sub_moves = solve_toh_recursive(n - k, source, aux2, destination)
     for disk, src, dst in sub_moves:
         moves.append([disk + k, src, dst])
-    
-    # Move k disks from aux1 to destination
     moves.extend(frame_stewart_algorithm(k, aux1, source, aux2, destination))
-
-    # Convert peg letters to match our standard
+    moves.extend(frame_stewart_algorithm(k, aux1, source, aux2, destination))
     peg_names = {source: 'A', aux1: 'B', aux2: 'C', destination: 'D'}
     return [[disk, peg_names[src], peg_names[dst]] for disk, src, dst in moves]
 
@@ -109,29 +103,28 @@ def new_game():
 
         logger.info(f"Starting new game with {disk_count} disks, mode: {mode}")
 
-        # Generate recursive solution
         start_time = time.time()
         recursive_solution = solve_toh_recursive(disk_count, 'A', 'B', 'C')
         recursive_time = time.time() - start_time
 
-        # Generate iterative solution
         start_time = time.time()
         iterative_solution = solve_toh_iterative(disk_count, 'A', 'B', 'C')
         iterative_time = time.time() - start_time
 
-        # Generate Frame-Stewart solution for 4 pegs
         start_time = time.time()
         frame_stewart_solution = frame_stewart_algorithm(disk_count, 'A', 'B', 'C', 'D')
         frame_stewart_time = time.time() - start_time
 
-        # Save performance metrics to database
         toh_db.save_algorithm_performance(disk_count, 'recursive', 3, recursive_time)
         toh_db.save_algorithm_performance(disk_count, 'iterative', 3, iterative_time)
         toh_db.save_algorithm_performance(disk_count, 'frame_stewart', 4, frame_stewart_time)
 
+        # Set minimum moves based on mode
+        min_moves = len(frame_stewart_solution) if mode == '4peg' else (2 ** disk_count) - 1
+
         return jsonify({
             'disk_count': disk_count,
-            'min_moves': (2 ** disk_count) - 1,
+            'min_moves': min_moves,
             'solutions': {
                 'recursive': {'moves': recursive_solution, 'time': recursive_time},
                 'iterative': {'moves': iterative_solution, 'time': iterative_time},
@@ -170,13 +163,9 @@ def validate_solution():
         except ValueError:
             return jsonify({'success': False, 'message': 'Disk count must be a number'}), 400
 
-        # Validate the moves
         valid_solution = validate_move_sequence(disk_count, moves)
         if valid_solution:
-            # Save the result to database
             toh_db.save_score(player_name, disk_count, len(moves), mode)
-            
-            # Check if solution is optimal
             optimal_moves = (2 ** disk_count) - 1
             is_optimal = len(moves) == optimal_moves
             
@@ -200,33 +189,25 @@ def validate_move_sequence(disk_count, moves):
     Validate if a sequence of moves correctly solves the Tower of Hanoi problem.
     Returns True if valid, False otherwise.
     """
-    # Initialize towers
     towers = {'A': list(range(disk_count, 0, -1)), 'B': [], 'C': [], 'D': []}
     
-    # Process each move
     for disk, source, dest in moves:
-        # Check if source tower exists and has disks
         if source not in towers or dest not in towers or not towers[source]:
             return False
             
-        # Check if top disk on source is the one we're moving
         top_disk = towers[source][-1]
         if top_disk != disk:
             return False
             
-        # Check if move violates the "larger on smaller" rule
         if towers[dest] and towers[dest][-1] < disk:
             return False
             
-        # Make the move
         towers[dest].append(towers[source].pop())
     
-    # Check if all disks are moved to the target peg (C for 3-peg, D for 4-peg)
     target_peg = 'D' if len(towers['D']) > 0 else 'C'
     if len(towers[target_peg]) != disk_count:
         return False
         
-    # Check if disks are in correct order (largest at bottom)
     for i in range(len(towers[target_peg])-1):
         if towers[target_peg][i] < towers[target_peg][i+1]:
             return False

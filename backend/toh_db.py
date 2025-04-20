@@ -6,14 +6,16 @@ import os
 logger = logging.getLogger(__name__)
 
 # Ensure the database directory exists
-os.makedirs('Database', exist_ok=True)
+os.makedirs('../database', exist_ok=True)
 
 @contextmanager
 def get_db_connection():
     """Context manager for database connections"""
     conn = None
     try:
-        conn = sqlite3.connect('Database/tower_of_hanoi.db')
+        db_path = os.path.abspath('../database/tower_of_hanoi.db')
+        logger.debug(f"Connecting to database at: {db_path}")
+        conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
         yield conn
     except sqlite3.Error as e:
@@ -38,6 +40,8 @@ def init_db():
                     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+            logger.info("Scores table created or already exists")
+            
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS algorithm_performance (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,6 +52,8 @@ def init_db():
                     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+            logger.info("Algorithm_performance table created or already exists")
+            
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS game_moves (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,6 +62,8 @@ def init_db():
                     FOREIGN KEY (score_id) REFERENCES scores (id)
                 )
             ''')
+            logger.info("Game_moves table created or already exists")
+            
             conn.commit()
             logger.info("Database initialized successfully")
     except Exception as e:
@@ -82,14 +90,12 @@ def save_game_result(player_name, disk_count, moves_count, moves_json, mode="3pe
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            # First save the score
             cursor.execute(
                 'INSERT INTO scores (player_name, disk_count, moves_count, mode) VALUES (?, ?, ?, ?)',
                 (player_name, disk_count, moves_count, mode)
             )
             score_id = cursor.lastrowid
             
-            # Then save the moves
             cursor.execute(
                 'INSERT INTO game_moves (score_id, moves_json) VALUES (?, ?)',
                 (score_id, moves_json)
@@ -171,7 +177,6 @@ def get_algorithm_comparison_chart_data():
             ''')
             rows = cursor.fetchall()
             
-            # Format data for charting
             disk_counts = sorted(set(row['disk_count'] for row in rows))
             algorithms = sorted(set(row['algorithm_type'] for row in rows))
             
