@@ -1,7 +1,7 @@
 import logging
 from flask import Flask, send_from_directory
 from flask_cors import CORS
-from tsp_routes import tsp_bp  # Import the blueprint
+from tsp_backend.tsp_routes import tsp_bp  # Import the blueprint
 
 # Configure centralized logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

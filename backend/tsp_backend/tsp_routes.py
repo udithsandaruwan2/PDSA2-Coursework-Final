@@ -4,7 +4,7 @@ import math
 import traceback
 import time
 import logging
-from tsp_db import TSPDatabase
+from tsp_backend.tsp_db import TSPDatabase
 import random
 import json
 import sqlite3
