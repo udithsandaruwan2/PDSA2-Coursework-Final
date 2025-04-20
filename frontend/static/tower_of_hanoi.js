@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // For local testing without API
             const mockResponse = {
                 disk_count: diskCount,
-                min_moves: (2 ** diskCount) - 1,
+                min_moves: (2 ** diskCount) - 1,  // Default 3-peg minimum moves
                 solutions: {
                     recursive: { moves: [], time: 0.001 },
                     iterative: { moves: [], time: 0.002 },
@@ -134,10 +134,17 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             diskCount = data.disk_count;
-            minMoves = data.min_moves;
+            solutions = data.solutions || {};
+            
+            // Use the Frame-Stewart algorithm's move count as minMoves when in 4-peg mode
+            if (gameMode === '4peg' && solutions.frame_stewart && solutions.frame_stewart.moves) {
+                minMoves = solutions.frame_stewart.moves.length;
+            } else {
+                minMoves = data.min_moves;  // Default to API-provided min_moves (typically 3-peg)
+            }
+            
             yourMoves = 0;
             moveHistory = [];
-            solutions = data.solutions || {};
             gameInProgress = true;
 
             moveHistoryList.innerHTML = '';
