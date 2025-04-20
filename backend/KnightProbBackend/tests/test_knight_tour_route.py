@@ -72,5 +72,5 @@ class KnightTourRouteTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("error", response.get_json())
 
-if __name__ == '_main_':
+if __name__ == '__main__':
     unittest.main()
