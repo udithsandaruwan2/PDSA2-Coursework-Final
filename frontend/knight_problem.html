@@ -27,8 +27,20 @@
         </label>
       </div>
 
-      <button onclick="startGame()">Start Game</button>
-      <div id="board" class="chessboard"></div>
+      <div id="main-container">
+        <button onclick="startGame()">Start Game</button>
+      
+        <!-- Main Board -->
+        <div id="board" class="chessboard"></div>
+      
+        <!-- Warnsdorff Board (Hidden by default) -->
+        <div id="warnsdorff-container" style="text-align: center; display: none;">
+
+          <h3>Warnsdorff's Rule Visualization</h3>
+          <div id="warnsdorff-board" class="chessboard"></div>
+        </div>
+      </div>
+      
       <p id="status"></p>
       <p id="path"></p>
       <p id="warnsdoffs_path"></p>

@@ -8,9 +8,11 @@ body, html {
 .container {
   display: flex;
   justify-content: center;
-  align-items: center;
-  height: 100vh;
+  align-items: flex-start;  /* Align to the top */
+  min-height: 100vh;        /* Let it grow taller than screen if needed */
   background-color: #f8f9fa;
+  padding: 20px;
+  overflow-y: auto;         /* Scroll if content overflows */
 }
 
 .content {
@@ -23,6 +25,16 @@ body {
   padding: 20px;
 }
 
+/*.chessboard {
+  display: grid;
+  grid-template-columns: repeat(8, 60px);
+  grid-template-rows: repeat(8, 60px);
+  margin: 20px auto;
+  border: 2px solid #333;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* subtle shadow */
+  /*border-radius: 8px; /* rounded corners */
+/*}*/
+
 .chessboard {
   display: grid;
   grid-template-columns: repeat(8, 60px);
@@ -31,6 +43,14 @@ body {
   border: 2px solid #333;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* subtle shadow */
   border-radius: 8px; /* rounded corners */
+  gap: 0; /* removes gaps between cells */
+}
+
+#main-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
 }
 
 .square {

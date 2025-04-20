@@ -304,10 +304,9 @@ function visualizeBothTour(startingPoint) {
         if (warnData.success) {
           console.log("⚡ Warnsdorff solution path:", warnData.path);
 
-          setTimeout(() => {
-            visualizeBacktrackSolution(warnData.path); // Reuse same visualizer
+            visualizeWarnsdorffSolution(warnData.path); // Reuse same visualizer
             document.getElementById('warnsdoffs_path').innerText = `Warnsdoff's path: ${JSON.stringify(warnData.path)}`;
-          }, 20000);
+         
 
           warnsdoffTime = warnData.warnsdoff_elapsed_time;
         } else {
@@ -384,6 +383,63 @@ function visualizeBacktrackSolution(path) {
     index++;
   }, 400); // Delay in ms between steps (adjust speed here)
 }
+
+function visualizeWarnsdorffSolution(path) {
+  console.log("Visualizing Warnsdorff's solution path:", path);
+
+  // Get the Warnsdorff board element and make it visible
+  const warnsdorffBoard = document.getElementById('warnsdorff-board');
+  const warnsdorffContainer = document.getElementById('warnsdorff-container');
+  warnsdorffContainer.style.display = 'block'; // Make the Warnsdorff board visible
+
+  // Clear the board before rendering
+  warnsdorffBoard.innerHTML = '';
+
+  let index = 0;
+  const interval = setInterval(() => {
+    if (index >= path.length) {
+      clearInterval(interval);
+      document.getElementById('status').innerText = "📚 Game over! You've completed the Warnsdorff's tour.";
+      return;
+    }
+
+    const [row, col] = path[index];
+    selectedPath = path.slice(0, index + 1); // Update the selected path to match progress
+    drawWarnsdorffBoard([row, col]); // Draw Warnsdorff's path on its board
+    index++;
+  }, 400); // Adjust the speed here
+}
+
+function drawWarnsdorffBoard(currentPos) {
+  const board = document.getElementById('warnsdorff-board');
+  board.innerHTML = '';
+
+  const validMoves = getValidMoves(currentPos); // Assuming this function works for Warnsdorff
+
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const square = document.createElement('div');
+      square.classList.add('square');
+      square.classList.add((row + col) % 2 === 0 ? 'white' : 'black');
+      square.dataset.row = row;
+      square.dataset.col = col;
+
+      if (row === currentPos[0] && col === currentPos[1]) {
+        square.classList.add('start');
+        square.innerText = '♞'; // Knight symbol
+      } else if (selectedPath.some(p => p[0] === row && p[1] === col)) {
+        square.classList.add('selected');
+        square.innerText = selectedPath.findIndex(p => p[0] === row && p[1] === col);
+      } else if (validMoves.some(m => m[0] === row && m[1] === col)) {
+        square.classList.add('valid-move');
+      }
+
+      square.onclick = () => selectMove(row, col);
+      board.appendChild(square);
+    }
+  }
+}
+
 
 
 function savePerformanceData(backtrackingTime, warnsdoffTime) {
