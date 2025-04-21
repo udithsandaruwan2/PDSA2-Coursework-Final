@@ -130,7 +130,6 @@ function submitPath() {
 
   // Log or display the selected algorithm
   console.log(`Selected Algorithm: ${algo}`);
-  // Or show on UI (optional)
   document.getElementById('status').innerText = `🔍 Validating using: ${algo === 'backtracking' ? 'Backtracking Algorithm' : 'Warnsdorff’s Rule'}...`;
 
   fetch(endpoint, {
@@ -143,7 +142,39 @@ function submitPath() {
       if (data.valid) {
         document.getElementById('status').innerText = "✅ Congrats! You Won. Enter your name to save 🎉";
         document.getElementById('winner-form').style.display = 'block';
-      } else if (data.message.includes("Incomplete Tour. But you are close! A solution is still possible from here.")) {
+
+        // 🎯 After a win: Calculate performance of both algorithms
+        const startingPoint = selectedPath[0];
+
+        // Solve using Backtracking
+        fetch("http://localhost:5000/api/solve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: [startingPoint] })
+        })
+        .then(res => res.json())
+        .then(backtrackData => {
+          const backtrackingTime = backtrackData.backtrack_elapsed_time ;
+
+          // Solve using Warnsdorff
+          fetch("http://localhost:5000/api/warnsdorff", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ path: [startingPoint] })
+          })
+          .then(res => res.json())
+          .then(warnsdoffData => {
+            const warnsdoffTime = warnsdoffData.warnsdoff_elapsed_time;
+
+            // Save performance
+            console.log("Saving performance metrics to backend:", backtrackingTime, warnsdoffTime);
+            savePerformanceData(backtrackingTime, warnsdoffTime);
+          })
+          .catch(err => console.error("❌ Error calling Warnsdorff API:", err));
+        })
+        .catch(err => console.error("❌ Error calling Backtracking API:", err));
+      } 
+      else if (data.message.includes("Incomplete Tour. But you are close! A solution is still possible from here.")) {
         const tryAgain = confirm(data.message + "\nDo you want to continue playing from here?");
         if (tryAgain) {
           selectedPath.pop();
@@ -152,17 +183,18 @@ function submitPath() {
         } else {
           document.getElementById('status').innerText = "❌ You chose to quit. Game over.";
         }
-      } else {
+      } 
+      else {
         document.getElementById('status').innerText = "😕 Hmm... seems like you're out of valid moves. Let's double-check with my algorithms before we call this a loss...";
         const startingPoint = selectedPath[0];
 
-        if(algo === "backtracking"){
-          visualizeBacktrackingTour(startingPoint); // Using backtracking algortihm to visualize the correct path
-        }else if(algo === "warnsdorff"){
-          visualizeWarnsdoffTour(startingPoint) // Using Warnsdoff's algorith to visualize the correct path
-        }else if(algo === "using_both"){
-          visualizeBothTour(startingPoint); // using both algo to get the correct path
-        }else{
+        if (algo === "backtracking") {
+          visualizeBacktrackingTour(startingPoint);
+        } else if (algo === "warnsdorff") {
+          visualizeWarnsdoffTour(startingPoint);
+        } else if (algo === "using_both") {
+          visualizeBothTour(startingPoint);
+        } else {
           alert("Please select one or both algorithm");
         }
       }
@@ -172,6 +204,7 @@ function submitPath() {
       document.getElementById('status').innerText = "❌ Error communicating with the server.";
     });
 }
+
 
 
 //Submitting winner to the database
@@ -247,7 +280,7 @@ function visualizeWarnsdoffTour(startingPoint) {
 
   fetch('http://127.0.0.1:5000/api/warnsdorff', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers:  { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path: [startingPoint] })
   })
   .then(res => res.json())
