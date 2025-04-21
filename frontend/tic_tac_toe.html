@@ -1,14 +1,99 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic Tac Toe</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <h1>Tic Tac Toe Game</h1>
-    <script src="script.js"></script>
-</body>
-</html>
+<html>
 
+<head>
+    <title>5x5 Tic-Tac-Toe</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            margin: 20px auto;
+        }
+
+        td {
+            width: 60px;
+            height: 60px;
+            text-align: center;
+            font-size: 32px;
+            border: 2px solid #000;
+            cursor: pointer;
+        }
+
+        #algorithm,
+        #algorithm-label {
+            transition: opacity 0.5s ease-out;
+        }
+
+        #game-buttons {
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h2 style="text-align:center;">5x5 Tic-Tac-Toe</h2>
+
+    <!-- Player Name Input -->
+    <div style="text-align:center; margin-top: 20px;">
+        <label for="playerName" id="player-name-label">Enter your name: </label>
+        <input type="text" id="playerName" placeholder="Your Name" />
+    </div>
+    <!-- Algorithm Selector -->
+    <div style="text-align:center;">
+        <label for="algorithm" id="algorithm-label">Choose Algorithm: </label>
+        <select id="algorithm">
+            <option value="">Select Algorithm</option>
+            <option value="minimax">Minimax</option>
+            <option value="mcts">MCTS</option>
+        </select>
+    </div>
+
+    <!-- Game Start and Reset Buttons -->
+    <div id="game-buttons">
+        <button id="startButton" onclick="startGame()">Start Game</button>
+        <button id="resetButton" style="display:none;" onclick="resetGame()">Reset Game</button>
+    </div>
+
+    <table id="board"></table>
+
+    <a href="http://127.0.0.1:5000/tic_tac_toe/view-database">View Database</a>
+
+
+    <script src="tic_tac_toe_assests/scripts.js"></script>
+
+    <!-- Modal -->
+    <div id="gameModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalMessage"></h2>
+        </div>
+    </div>
+
+    <style>
+        /* Modal styles */
+        .modal {
+            display: none;
+            /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            /* Semi-transparent background */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px;
+            width: 300px;
+            margin: 0 auto;
+        }
+    </style>
+
+</body>
+
+</html>

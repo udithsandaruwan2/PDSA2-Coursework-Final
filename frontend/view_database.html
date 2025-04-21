@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Database Overview</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 40px;
+        }
+
+        th,
+        td {
+            border: 1px solid #aaa;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f0f0f0;
+        }
+
+        h2 {
+            margin-top: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Game Sessions</h1>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Player Name</th>
+            <th>Algorithm</th>
+            <th>Correct Answer</th>
+            <th>Timestamp</th>
+        </tr>
+        {% for s in sessions %}
+        <tr>
+            <td>{{ s[0] }}</td>
+            <td>{{ s[1] }}</td>
+            <td>{{ s[2] }}</td>
+            <td>{{ s[3] }}</td>
+            <td>{{ s[4] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2>AI Moves Log</h2>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Session ID</th>
+            <th>Algorithm</th>
+            <th>Move</th>
+            <th>Duration (ms)</th>
+            <th>Timestamp</th>
+        </tr>
+        {% for m in moves %}
+        <tr>
+            <td>{{ m[0] }}</td>
+            <td>{{ m[1] }}</td>
+            <td>{{ m[2] }}</td>
+            <td>{{ m[3] }}</td>
+            <td>{{ m[4] }}</td>
+            <td>{{ m[5] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+</body>
+
+</html>
