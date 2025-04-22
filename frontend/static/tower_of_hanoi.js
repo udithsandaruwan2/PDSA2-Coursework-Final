@@ -24,8 +24,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const showSolutionBtn = document.getElementById('show-solution');
     const submitSolutionBtn = document.getElementById('submit-solution');
     const toggleMoveHistoryBtn = document.getElementById('toggle-move-history');
+    const seeAllScoresBtn = document.getElementById('see-all-scores');
+    const viewDbTablesBtn = document.getElementById('view-db-tables');
     const solutionModal = document.getElementById('solution-modal');
     const successModal = document.getElementById('success-modal');
+    const allScoresModal = document.getElementById('all-scores-modal');
     const closeButtons = document.querySelectorAll('.close');
     const playAgainBtn = document.getElementById('play-again');
     const playerInputPanel = document.getElementById('player-input');
@@ -55,6 +58,8 @@ document.addEventListener('DOMContentLoaded', function() {
         showSolutionBtn.addEventListener('click', showSolution);
         submitSolutionBtn.addEventListener('click', handleSubmitSolution);
         toggleMoveHistoryBtn.addEventListener('click', toggleMoveHistory);
+        seeAllScoresBtn.addEventListener('click', showAllScores);
+        viewDbTablesBtn.addEventListener('click', viewDatabaseTables);
         playAgainBtn.addEventListener('click', () => {
             hideModal(successModal);
             startNewGame();
@@ -331,7 +336,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showModal(successModal);
             playerInputPanel.classList.remove('hidden');
             // Automatically submit the solution
-            handleSubmitSolution();
+            handleSubmitSolution(totalScore);
         }
     }
 
@@ -381,7 +386,38 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    async function handleSubmitSolution() {
+    async function showAllScores() {
+        try {
+            const response = await fetch('/api/toh/all-scores');
+            const scores = await response.json();
+
+            const scoresBody = document.getElementById('all-scores-body');
+            scoresBody.innerHTML = '';
+            scores.forEach(score => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${score.player_name}</td>
+                    <td>${score.disk_count}</td>
+                    <td>${score.moves_count}</td>
+                    <td>${score.mode}</td>
+                    <td>${score.score_amount}</td>
+                    <td>${score.timestamp}</td>
+                `;
+                scoresBody.appendChild(row);
+            });
+
+            showModal(allScoresModal);
+        } catch (error) {
+            console.error('Error loading all scores:', error);
+            alert('Failed to load scores. Please try again.');
+        }
+    }
+
+    function viewDatabaseTables() {
+        window.open('/api/toh/db-tables', '_blank');
+    }
+
+    async function handleSubmitSolution(totalScore = 0) {
         if (!gameInProgress && moveHistory.length === 0) {
             alert('No moves to submit. Please start a new game.');
             return;
@@ -437,7 +473,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p>Congratulations! You solved it in ${yourMoves} moves (Minimum: ${minMoves}).</p>
                     <p>${isOptimal ? 'Optimal solution!' : 'Try to match the minimum moves!'}</p>
                     <p>Time: ${Math.floor(gameSeconds / 60)}:${(gameSeconds % 60).toString().padStart(2, '0')}</p>
-                    <p>Score: ${Math.floor((minMoves / yourMoves) * 1000)} points</p>
+                    <p>Score: ${totalScore} points</p>
                 `;
             } else {
                 alert(data.message);
@@ -452,6 +488,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const playerName = playerNameInput.value.trim() || 'Anonymous';
         try {
             const movesJson = JSON.stringify(moveHistory);
+            const totalScore = Math.floor((minMoves / yourMoves) * 1000);
             const response = await fetch('/api/toh/validate-solution', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -473,7 +510,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         diskCount,
                         movesCount: moveHistory.length,
                         movesJson,
-                        mode: gameMode
+                        mode: gameMode,
+                        scoreAmount: totalScore
                     })
                 });
                 playerInputPanel.classList.add('hidden');

@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, render_template_string
 import toh_db
 import random
 import time
@@ -214,6 +214,7 @@ def save_game_result():
         moves_count = data.get('movesCount')
         moves_json = data.get('movesJson')
         mode = data.get('mode', '3peg')
+        score_amount = data.get('scoreAmount', 0)
 
         if not all([disk_count, moves_count, moves_json]):
             return jsonify({'success': False, 'message': 'Missing required fields'}), 400
@@ -221,12 +222,15 @@ def save_game_result():
         try:
             disk_count = int(disk_count)
             moves_count = int(moves_count)
+            score_amount = int(score_amount)
             if disk_count < 1 or moves_count < 1:
                 return jsonify({'success': False, 'message': 'Disk count and moves count must be positive'}), 400
+            if score_amount < 0:
+                return jsonify({'success': False, 'message': 'Score amount must be non-negative'}), 400
         except ValueError:
-            return jsonify({'success': False, 'message': 'Disk count and moves count must be numbers'}), 400
+            return jsonify({'success': False, 'message': 'Disk count, moves count, and score amount must be numbers'}), 400
 
-        score_id = toh_db.save_game_result(player_name, disk_count, moves_count, moves_json, mode)
+        score_id = toh_db.save_game_result(player_name, disk_count, moves_count, moves_json, mode, score_amount)
         return jsonify({'success': True, 'message': 'Game result saved successfully', 'score_id': score_id})
     except Exception as e:
         logger.error(f"Error in save-game-result: {str(e)}\n{traceback.format_exc()}")
@@ -260,6 +264,66 @@ def get_scores():
     except Exception as e:
         logger.error(f"Error getting scores: {str(e)}\n{traceback.format_exc()}")
         return jsonify({'error': 'Server error occurred while fetching scores'}), 500
+
+@bp.route('/all-scores', methods=['GET'])
+def get_all_scores():
+    try:
+        scores = toh_db.get_all_scores()
+        return jsonify([dict(score) for score in scores])
+    except Exception as e:
+        logger.error(f"Error getting all scores: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': 'Server error occurred while fetching all scores'}), 500
+
+@bp.route('/db-tables', methods=['GET'])
+def get_db_tables():
+    try:
+        tables_data = toh_db.get_all_table_data()
+        html = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <title>Database Tables</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                h1 { text-align: center; }
+                h2 { margin-top: 20px; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f2f2f2; }
+                tr:nth-child(even) { background-color: #f9f9f9; }
+            </style>
+        </head>
+        <body>
+            <h1>Database Tables</h1>
+            {% for table_name, data in tables.items() %}
+                <h2>{{ table_name }}</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            {% for column in data['columns'] %}
+                                <th>{{ column }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data['rows'] %}
+                            <tr>
+                                {% for value in row %}
+                                    <td>{{ value }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endfor %}
+        </body>
+        </html>
+        """
+        return render_template_string(html, tables=tables_data)
+    except Exception as e:
+        logger.error(f"Error getting database tables: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': 'Server error occurred while fetching database tables'}), 500
 
 @bp.route('/algorithm-comparison', methods=['GET'])
 def get_algorithm_comparison():

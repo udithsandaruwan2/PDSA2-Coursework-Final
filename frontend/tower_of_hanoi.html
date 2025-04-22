@@ -38,6 +38,8 @@
             <button id="show-solution">Show Solution</button>
             <button id="submit-solution">Submit Solution</button>
             <button id="toggle-move-history">Toggle Move History</button>
+            <button id="see-all-scores">See All Scores</button>
+            <button id="view-db-tables">View Database Tables</button>
         </div>
         <div class="game-area">
             <div id="three-peg-towers" class="towers">
@@ -113,7 +115,6 @@
                     <tbody id="scores-body"></tbody>
                 </table>
             </div>
-           
             <div class="tab-content" id="algorithms-content">
                 <h3>Algorithm Performance</h3>
                 <canvas id="algorithm-chart" style="max-height: 400px;"></canvas>
@@ -156,7 +157,26 @@
                 <button id="play-again">Play Again</button>
             </div>
         </div>
+        <div id="all-scores-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close">×</span>
+                <h3>All Scores</h3>
+                <table id="all-scores-table">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Disks</th>
+                            <th>Moves</th>
+                            <th>Mode</th>
+                            <th>Score</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="all-scores-body"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
     <script src="/static/tower_of_hanoi.js"></script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9345a6c7ccc4afba',t:'MTc0NTMzMDQ2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
