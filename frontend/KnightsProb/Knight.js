@@ -1,6 +1,7 @@
 let selectedPath = [];
 let startPosition = null;
 
+
 function startGame() {
   fetch('http://localhost:5000/api/start')
     .then(res => res.json())
@@ -337,14 +338,14 @@ function visualizeBothTour(startingPoint) {
         if (warnData.success) {
           console.log("⚡ Warnsdorff solution path:", warnData.path);
 
-            visualizeWarnsdorffSolution(warnData.path); // Reuse same visualizer
+            visualizeWarnsdorffSolution(warnData.path); 
             document.getElementById('warnsdoffs_path').innerText = `Warnsdoff's path: ${JSON.stringify(warnData.path)}`;
          
 
           warnsdoffTime = warnData.warnsdoff_elapsed_time;
         } else {
           document.getElementById('warnsdoffs_path').innerText = "No path found using WarnsDoff's algorithm";
-          document.getElementById('status').innerText = "Oop! Seems even I can't solve the problem. So how about we call this game a tie and move on?";
+          document.getElementById('status').innerText = "🤝 Oop! Seems even I can't solve the problem. So how about we call this game a tie and move on?";
           warnsdoffTime = warnData.warnsdoff_elapsed_time;
         }
 

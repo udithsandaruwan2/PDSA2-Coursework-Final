@@ -12,8 +12,8 @@ DB_PATH = os.path.abspath(os.path.join(BASE_DIR, '../../database/knightstour.db'
 
 @knight_blueprint.route('/start', methods=['GET'])
 def start_game():
-    start_x = 0#random.randint(0, 7)
-    start_y = 0#random.randint(0, 7)
+    start_x = random.randint(0, 7)
+    start_y = random.randint(0, 7)
     return jsonify({"start": {"x": start_x, "y": start_y}})
 
 """@knight_blueprint.route('/validate', methods=['POST'])
@@ -230,3 +230,67 @@ def save_performance():
     except Exception as e:
         print("Error saving performance data:", str(e))
         return jsonify({"success": False, "message": "Failed to save performance data"}), 400
+    
+    
+    
+    
+    
+#Get winner details from DB
+@knight_blueprint.route('/get_winners', methods=['GET'])
+def get_winners():
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(base_dir, '../../database/knightstour.db')
+
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT id, name, start_x, start_y, path, timestamp FROM winners")
+        rows = cursor.fetchall()
+        conn.close()
+
+        winners = []
+        for row in rows:
+            winners.append({
+                "id": row[0],
+                "name": row[1],
+                "start_x": row[2],
+                "start_y": row[3],
+                "path": eval(row[4]),  # safely convert string to list
+                "timestamp": row[5]
+            })
+
+        return jsonify({"success": True, "winners": winners})
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+
+#Get performance details from DB
+@knight_blueprint.route('/get_performance', methods=['GET'])
+def get_performance_metrics():
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(base_dir, '../../database/knightstour.db')
+
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT id, backtracking_algorithm, warnsdoffs_algorithm FROM performance_metrics")
+        rows = cursor.fetchall()
+        conn.close()
+
+        metrics = []
+        for row in rows:
+            metrics.append({
+                "id": row[0],
+                "backtracking_algorithm": row[1],
+                "warnsdoffs_algorithm": row[2]
+            })
+
+        return jsonify({"success": True, "metrics": metrics})
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+    
