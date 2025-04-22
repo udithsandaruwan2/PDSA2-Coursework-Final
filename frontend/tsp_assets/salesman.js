@@ -10,7 +10,7 @@ if (!ctx) {
 let cities = [];
 let playerRoute = [];
 let nnRoute = [];
-let bfRoute = [];
+let bbRoute = [];
 let hkRoute = [];
 let distanceMatrix = {};
 let playerPathSegments = [];  // Each element: { from: cityA, to: cityB }
@@ -34,7 +34,7 @@ function getHomeChar() {
 function generateCities() {
     playerRoute = [];
     nnRoute = [];
-    bfRoute = [];
+    bbRoute = [];
     hkRoute = [];
     playerPathSegments = [];
     firstPathDrawn = false;
@@ -101,7 +101,7 @@ function getCityChar(cityId) {
     // Reset UI elements
     document.getElementById("humanResult").innerText = "Human Distance: N/A";
     document.getElementById("nnResult").style.display = "none";
-    document.getElementById("bfResult").style.display = "none";
+    document.getElementById("bbResult").style.display = "none";
     document.getElementById("hkResult").style.display = "none";
     document.getElementById("toggles").style.display = "none";
     
@@ -157,8 +157,8 @@ function drawCities() {
     if (document.getElementById("showNN")?.checked && nnRoute.length > 1) {
         drawPath([cities[homeCityIndex], ...nnRoute, cities[homeCityIndex]], "green", true);
     }
-    if (document.getElementById("showBF")?.checked && bfRoute.length > 1) {
-        drawPath([cities[homeCityIndex], ...bfRoute, cities[homeCityIndex]], "purple", true);
+    if (document.getElementById("showbb")?.checked && bbRoute.length > 1) {
+        drawPath([cities[homeCityIndex], ...bbRoute, cities[homeCityIndex]], "purple", true);
     }
     if (document.getElementById("showHK")?.checked && hkRoute.length > 1) {
         drawPath([cities[homeCityIndex], ...hkRoute, cities[homeCityIndex]], "orange", true);
@@ -329,7 +329,7 @@ function submitRoute() {
 
     // Hide algorithm results until comparison
     document.getElementById("nnResult").style.display = "none";
-    document.getElementById("bfResult").style.display = "none";
+    document.getElementById("bbResult").style.display = "none";
     document.getElementById("hkResult").style.display = "none";
     document.getElementById("toggles").style.display = "none";
 
@@ -385,12 +385,12 @@ function compareWithAlgorithms() {
             document.getElementById("showNN").checked = true;
         }
 
-        if (data.brute_force && !data.brute_force.error) {
-            bfRoute = data.brute_force.route.map(idToCity);
-            document.getElementById("bfResult").innerText =
-                `Brute Force: ${data.brute_force.distance.toFixed(1)} km (Time: ${(data.brute_force.time * 1000).toFixed(2)} ms)`;
-            document.getElementById("bfResult").style.display = "block";
-            document.getElementById("showBF").checked = true;
+        if (data.branch_bound && !data.branch_bound.error) {
+            bbRoute = data.branch_bound.route.map(idToCity);
+            document.getElementById("bbResult").innerText =
+                `Branch & Bound: ${data.branch_bound.distance.toFixed(1)} km (Time: ${(data.branch_bound.time * 1000).toFixed(2)} ms)`;
+            document.getElementById("bbResult").style.display = "block";
+            document.getElementById("showbb").checked = true;
         }
 
         if (data.held_karp && !data.held_karp.error) {
@@ -403,12 +403,12 @@ function compareWithAlgorithms() {
 
         const humanDistance = humanDistanceInKm.toFixed(1);
         const nnDistance = parseFloat(data.nearest_neighbor.distance).toFixed(1);
-        const bfDistance = parseFloat(data.brute_force.distance).toFixed(1);
+        const bbDistance = parseFloat(data.branch_bound.distance).toFixed(1);
         const hkDistance = parseFloat(data.held_karp.distance).toFixed(1);
 
         let resultMessage = "";
-        if (humanDistance <= nnDistance && humanDistance <= bfDistance && humanDistance <= hkDistance) {
-            resultMessage = humanDistance < nnDistance || humanDistance < bfDistance || humanDistance < hkDistance
+        if (humanDistance <= nnDistance && humanDistance <= bbDistance && humanDistance <= hkDistance) {
+            resultMessage = humanDistance < nnDistance || humanDistance < bbDistance || humanDistance < hkDistance
                 ? "Congratulations! You found the shortest route!"
                 : "Congratulations! You matched the best algorithm route!";
             saveWinToDatabase(data, humanDistance, selectedCityChars);
@@ -442,13 +442,13 @@ function saveGameSessionToDatabase(data, selectedCityIds) {
         home_city: getHomeChar(),
         selected_cities: selectedCityIds,
         nn_distance: data.nearest_neighbor.distance,
-        bf_distance: data.brute_force.distance,
+        bb_distance: data.branch_bound.distance,
         hk_distance: data.held_karp.distance,
         nn_time: data.nearest_neighbor.time,
-        bf_time: data.brute_force.time,
+        bb_time: data.branch_bound.time,
         hk_time: data.held_karp.time,
         nn_route: data.nearest_neighbor.route.map(c => String.fromCharCode(65 + c.id)),
-        bf_route: data.brute_force.route.map(c => String.fromCharCode(65 + c.id)),
+        bb_route: data.branch_bound.route.map(c => String.fromCharCode(65 + c.id)),
         hk_route: data.held_karp.route.map(c => String.fromCharCode(65 + c.id)),
     };
 
@@ -478,13 +478,13 @@ function saveWinToDatabase(data, humanDistance, humanRoute) {
         human_route: [getHomeChar(), ...humanRoute, getHomeChar()],
         human_distance: humanDistance,
         nn_distance: data.nearest_neighbor.distance,
-        bf_distance: data.brute_force.distance,
+        bb_distance: data.branch_bound.distance,
         hk_distance: data.held_karp.distance,
         nn_time: data.nearest_neighbor.time,
-        bf_time: data.brute_force.time,
+        bb_time: data.branch_bound.time,
         hk_time: data.held_karp.time,
         nn_route: data.nearest_neighbor.route.map(c => String.fromCharCode(65 + c.id)),
-        bf_route: data.brute_force.route.map(c => String.fromCharCode(65 + c.id)),
+        bb_route: data.branch_bound.route.map(c => String.fromCharCode(65 + c.id)),
         hk_route: data.held_karp.route.map(c => String.fromCharCode(65 + c.id)),
     };
 
@@ -524,32 +524,7 @@ function nearestNeighbour(citiesList) {
     return visited;
 }
 
-// Brute Force Algorithm
-function bruteForce(citiesList) {
-    if (citiesList.length > 8) {
-        alert("Too many cities for brute force approach! Maximum is 8 cities.");
-        return [];
-    }
 
-    try {
-        const permutations = permute(citiesList);
-        let bestDistance = Infinity;
-        let bestRoute = [];
-
-        permutations.forEach(route => {
-            const dist = calculateTotalDistance([...route, route[0]]);
-            if (dist < bestDistance) {
-                bestDistance = dist;
-                bestRoute = route;
-            }
-        });
-
-        return bestRoute;
-    } catch (error) {
-        console.error("Error in brute force algorithm:", error);
-        return [];
-    }
-}
 
 function permute(arr) {
     if (arr.length === 0) return [[]];
@@ -564,7 +539,7 @@ function resetGame() {
     gameOver = false;
     playerRoute = [];
     nnRoute = [];
-    bfRoute = [];
+    bbRoute = [];
     hkRoute = [];
     playerPathSegments = [];
     firstPathDrawn = false;
@@ -572,13 +547,13 @@ function resetGame() {
 
     document.getElementById("humanResult").innerText = "Human Distance: N/A";
     document.getElementById("nnResult").style.display = "none";
-    document.getElementById("bfResult").style.display = "none";
+    document.getElementById("bbResult").style.display = "none";
     document.getElementById("hkResult").style.display = "none";
     document.getElementById("resultMessage").innerText = "";
 
     document.getElementById("showHuman").checked = true;
     document.getElementById("showNN").checked = false;
-    document.getElementById("showBF").checked = false;
+    document.getElementById("showbb").checked = false;
     document.getElementById("showHK").checked = false;
 
     // Defer to avoid DOM lockups
@@ -613,7 +588,7 @@ document.addEventListener("DOMContentLoaded", () => {
     generateCities();
     addDatabaseViewerLink();
 
-    ['showHuman', 'showNN', 'showBF', 'showHK'].forEach(id => {
+    ['showHuman', 'showNN', 'showbb', 'showHK'].forEach(id => {
         const checkbox = document.getElementById(id);
         if (checkbox) {
             checkbox.addEventListener('change', drawCities);

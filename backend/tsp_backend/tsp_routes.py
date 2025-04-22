@@ -48,54 +48,73 @@ def tsp_nearest_neighbor(cities):
     execution_time = time.time() - start_time
 
     return path, path_distance, execution_time
-
-
-def tsp_brute_force(cities):
+def tsp_branch_and_bound(cities):
     start_time = time.time()
 
-    # Initialize best solution tracker
     best_result = {
         'path': None,
         'distance': float('inf')
     }
 
-    def backtrack(current_path, visited, current_distance):
-        # Base case: if all cities visited (excluding return to home)
+    def bound(current_path, visited, current_distance):
+        # A simple lower-bound estimate: current distance + minimal outgoing edge from last visited city
+        if not current_path:
+            return 0
+
+        last_city = current_path[-1]
+        remaining = [city for city in cities[1:] if city['id'] not in visited]
+
+        min_estimate = float('inf')
+        for city in remaining:
+            dist = calculate_distance(last_city, city)
+            if dist < min_estimate:
+                min_estimate = dist
+
+        return current_distance + (min_estimate if remaining else 0)
+
+    def branch(current_path, visited, current_distance):
+        # Prune if bound exceeds best found
+        estimate = bound(current_path, visited, current_distance)
+        if estimate >= best_result['distance']:
+            return
+
+        # If all cities visited (except home), finalize path
         if len(current_path) == len(cities) - 1:
-            # complete cycle by returning to home city
             home = cities[0]
             last_city = current_path[-1]
             return_leg = calculate_distance(last_city, home)
             total_distance = current_distance + return_leg
 
-            full_path = [home] + current_path + [home]
+            if current_path and current_path[-1]['id'] == home['id']:
+                full_path = [home] + current_path  # Already ends in home
+            else:
+                full_path = [home] + current_path + [home]
 
-            logger.debug("BF (Recursive) candidate path:")
+            logger.debug("B&B candidate path:")
             for i in range(len(full_path) - 1):
                 a = full_path[i]
                 b = full_path[i + 1]
-                logger.debug(f"BF: {a['id']} -> {b['id']}: {calculate_distance(a, b):.4f} km")
+                logger.debug(f"BB: {a['id']} -> {b['id']}: {calculate_distance(a, b):.4f} km")
 
             if total_distance < best_result['distance']:
                 best_result['distance'] = total_distance
                 best_result['path'] = full_path
             return
 
-        # Recurse to unvisited cities
-        for city in cities[1:]:  # Skip cities[0] which is home city
+        # Branch to unvisited cities
+        for city in cities[1:]:  # Skip home city (assumed cities[0])
             if city['id'] not in visited:
                 visited.add(city['id'])
                 last_city = current_path[-1] if current_path else cities[0]
                 dist = calculate_distance(last_city, city)
                 current_path.append(city)
 
-                backtrack(current_path, visited, current_distance + dist)
+                branch(current_path, visited, current_distance + dist)
 
                 current_path.pop()
                 visited.remove(city['id'])
 
-    # Start backtracking from home city
-    backtrack([], set(), 0)
+    branch([], set(), 0)
 
     execution_time = time.time() - start_time
     return best_result['path'], best_result['distance'], execution_time
@@ -227,11 +246,11 @@ def solve_tsp():
 
         # Perform TSP calculations only on selected cities (which include home city at both ends)
         nn_path, nn_distance, nn_time = tsp_nearest_neighbor(selected_cities)
-        bf_path, bf_distance, bf_time = tsp_brute_force(selected_cities)
+        bb_path, bb_distance, bb_time = tsp_branch_and_bound(selected_cities)
         hk_path, hk_distance, hk_time = tsp_held_karp(selected_cities)
 
         # Check if human route matches the best algorithm route
-        best_algorithm_distance = min(nn_distance, bf_distance, hk_distance)
+        best_algorithm_distance = min(nn_distance, bb_distance, hk_distance)
         human_distance = total_path_distance(selected_cities)
 
         response_data = {
@@ -240,10 +259,10 @@ def solve_tsp():
                 'distance': nn_distance,
                 'time': nn_time
             },
-            'brute_force': {
-                'route': bf_path,
-                'distance': bf_distance,
-                'time': bf_time
+            'branch_bound': {
+                'route': bb_path,
+                'distance': bb_distance,
+                'time': bb_time
             },
             'held_karp': {
                 'route': hk_path,
@@ -286,15 +305,15 @@ def save_game_session():
         home_city_char = data.get('home_city')
         selected_cities = data.get('selected_cities')
         nn_distance = round(float(data.get('nn_distance')), 1)
-        bf_distance = round(float(data.get('bf_distance')), 1)
+        bb_distance = round(float(data.get('bb_distance')), 1)
         hk_distance = round(float(data.get('hk_distance')), 1)
         nn_time = round(float(data.get('nn_time')), 1)
-        bf_time = round(float(data.get('bf_time')), 1)
+        bb_time = round(float(data.get('bb_time')), 1)
         hk_time = round(float(data.get('hk_time')), 1)
 
         # 🆕 Extract the routes
         nn_route = data.get('nn_route', [])
-        bf_route = data.get('bf_route', [])
+        bb_route = data.get('bb_route', [])
         hk_route = data.get('hk_route', [])
 
         # Save to DB including routes
@@ -303,13 +322,13 @@ def save_game_session():
             home_city_char,
             selected_cities,
             nn_distance,
-            bf_distance,
+            bb_distance,
             hk_distance,
             nn_time,
-            bf_time,
+            bb_time,
             hk_time,
             nn_route,
-            bf_route,
+            bb_route,
             hk_route
         )
 
@@ -334,14 +353,14 @@ def save_win():
         human_route = data.get('human_route')
         human_distance = round(float(data.get('human_distance')), 1)
         nn_distance = round(float(data.get('nn_distance')), 1)
-        bf_distance = round(float(data.get('bf_distance')), 1)
+        bb_distance = round(float(data.get('bb_distance')), 1)
         hk_distance = round(float(data.get('hk_distance')), 1)
         nn_time = round(float(data.get('nn_time')), 1)
-        bf_time = round(float(data.get('bf_time')), 1)
+        bb_time = round(float(data.get('bb_time')), 1)
         hk_time = round(float(data.get('hk_time')), 1)
 
         nn_route = data.get('nn_route', [])
-        bf_route = data.get('bf_route', [])
+        bb_route = data.get('bb_route', [])
         hk_route = data.get('hk_route', [])
 
         session_id = data.get('session_id')
@@ -352,13 +371,13 @@ def save_win():
             home_city,
             human_route,
             nn_distance,
-            bf_distance,
+            bb_distance,
             hk_distance,
             nn_time,
-            bf_time,
+            bb_time,
             hk_time,
             nn_route,
-            bf_route,
+            bb_route,
             hk_route
         )
 
@@ -405,13 +424,13 @@ def db_viewer():
                     <th>Home City</th>
                     <th>Selected Cities</th>
                     <th>NN Distance</th>
-                    <th>BF Distance</th>
+                    <th>BB Distance</th>
                     <th>HK Distance</th>
                     <th>NN Time</th>
-                    <th>BF Time</th>
+                    <th>BB Time</th>
                     <th>HK Time</th>
                     <th>NN Route</th>
-                    <th>BF Route</th>
+                    <th>BB Route</th>
                     <th>HK Route</th>
                     <th>Timestamp</th>
                 </tr>
@@ -502,7 +521,7 @@ def calculate_distance(a, b):
 
 
 def generate_city_list():
-    return [{'id': i, 'name': chr(65 + i), 'x': 0, 'y': 0} for i in range(10)]  # dummy x/y added
+    return [{'id': i, 'name': chr(65 + i), 'x': 0, 'y': 0} for i in range(10)]
 
 
 

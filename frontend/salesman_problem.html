@@ -22,7 +22,7 @@
     <div id="toggles" class="hidden-toggle">
         <label><input type="checkbox" id="showHuman" checked onchange="drawCities()"> Show Human Path</label>
         <label><input type="checkbox" id="showNN" onchange="drawCities()"> Show Nearest Neighbour Path</label>
-        <label><input type="checkbox" id="showBF" onchange="drawCities()"> Show Brute Force Path</label>
+        <label><input type="checkbox" id="showbb" onchange="drawCities()"> Show Branch & Bound Path</label>
         <!-- Added Held-Karp Path Toggle -->
         <label><input type="checkbox" id="showHK" onchange="drawCities()"> Show Held-Karp Path</label>
     </div>
@@ -30,7 +30,7 @@
     <div id="result">
         <p id="humanResult">Human Distance: N/A</p>
         <p id="nnResult" class="hidden-result">Nearest Neighbour Distance: N/A</p>
-        <p id="bfResult" class="hidden-result">Brute Force Distance: N/A</p>
+        <p id="bbResult" class="hidden-result">Branch & Bound Distance: N/A</p>
         <!-- Held-Karp Result -->
         <p id="hkResult" class="hidden-result">Held-Karp Distance: N/A</p>
     </div>

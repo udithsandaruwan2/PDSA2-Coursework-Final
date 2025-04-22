@@ -15,13 +15,10 @@ class TSPDatabase:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-
-                #Delete existing tables if they exist
-                #cursor.execute('DROP TABLE IF EXISTS game_sessions')
-                #cursor.execute('DROP TABLE IF EXISTS win_players')
-
-                # Create game_sessions table
-                # Update this inside CREATE TABLE IF NOT EXISTS game_sessions:
+                # drop tables if they exist (for development purposes)
+                cursor.execute('DROP TABLE IF EXISTS game_sessions')
+                cursor.execute('DROP TABLE IF EXISTS win_players')
+                # Create game_sessions table (updated for BB)
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS game_sessions (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,14 +26,14 @@ class TSPDatabase:
                         home_city TEXT NOT NULL,
                         selected_cities TEXT NOT NULL,
                         nn_distance REAL NOT NULL,
-                        bf_distance REAL NOT NULL,
+                        bb_distance REAL NOT NULL,
                         hk_distance REAL NOT NULL,
                         nn_time REAL NOT NULL,
-                        bf_time REAL NOT NULL,
+                        bb_time REAL NOT NULL,
                         hk_time REAL NOT NULL,
-                        nn_route TEXT,  -- NEW
-                        bf_route TEXT,  -- NEW
-                        hk_route TEXT,  -- NEW
+                        nn_route TEXT,
+                        bb_route TEXT,
+                        hk_route TEXT,
                         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
@@ -54,20 +51,20 @@ class TSPDatabase:
                 ''')
 
                 conn.commit()
-            print("Database tables created successfully.")
+                print("Database tables created successfully.")
         except sqlite3.Error as e:
             print(f"Error creating tables: {e}")
 
     def record_game_session(
         self, player_name, home_city, selected_cities,
-        nn_distance, bf_distance, hk_distance,
-        nn_time, bf_time, hk_time,
-        nn_route=None, bf_route=None, hk_route=None
+        nn_distance, bb_distance, hk_distance,
+        nn_time, bb_time, hk_time,
+        nn_route=None, bb_route=None, hk_route=None
     ):
         try:
             selected_cities_json = json.dumps(selected_cities)
             nn_route_json = json.dumps(nn_route or [])
-            bf_route_json = json.dumps(bf_route or [])
+            bb_route_json = json.dumps(bb_route or [])
             hk_route_json = json.dumps(hk_route or [])
 
             with sqlite3.connect(self.db_path) as conn:
@@ -75,15 +72,15 @@ class TSPDatabase:
                 cursor.execute('''
                     INSERT INTO game_sessions (
                         player_name, home_city, selected_cities,
-                        nn_distance, bf_distance, hk_distance,
-                        nn_time, bf_time, hk_time,
-                        nn_route, bf_route, hk_route
+                        nn_distance, bb_distance, hk_distance,
+                        nn_time, bb_time, hk_time,
+                        nn_route, bb_route, hk_route
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     player_name, home_city, selected_cities_json,
-                    nn_distance, bf_distance, hk_distance,
-                    nn_time, bf_time, hk_time,
-                    nn_route_json, bf_route_json, hk_route_json
+                    nn_distance, bb_distance, hk_distance,
+                    nn_time, bb_time, hk_time,
+                    nn_route_json, bb_route_json, hk_route_json
                 ))
                 conn.commit()
                 print(f"Game session inserted successfully with ID {cursor.lastrowid}")
@@ -91,7 +88,6 @@ class TSPDatabase:
         except sqlite3.Error as e:
             print(f"Error inserting game session: {e}")
             return None
-
 
     def record_win_player(self, player_name, session_id, human_route, human_distance):
         try:
@@ -127,21 +123,14 @@ class TSPDatabase:
                 ''')
                 rows = cursor.fetchall()
 
-                # Debug: Print out rows for inspection
                 print(f"Fetched rows from win_players: {rows}")
 
-                # Make sure rows are not empty
-                if not rows:
-                    print("No win players found in the database.")
-                    return []
-
-                # Ensure that every row contains exactly 4 elements
                 cleaned_rows = []
                 for row in rows:
-                    if len(row) == 4:  # Expected number of columns
+                    if len(row) == 4:
                         cleaned_rows.append(row)
                     else:
-                        print(f"Skipping malformed row (incorrect number of columns): {row}")
+                        print(f"Skipping malformed row: {row}")
 
                 return cleaned_rows
         except sqlite3.Error as e:
