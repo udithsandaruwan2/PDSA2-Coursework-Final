@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tower of Hanoi</title>
     <link rel="stylesheet" href="/static/tower_of_hanoi.css">
+    <!-- Add Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
@@ -111,8 +113,10 @@
                     <tbody id="scores-body"></tbody>
                 </table>
             </div>
+           
             <div class="tab-content" id="algorithms-content">
                 <h3>Algorithm Performance</h3>
+                <canvas id="algorithm-chart" style="max-height: 400px;"></canvas>
                 <table id="algorithm-table">
                     <thead><tr><th>Disks</th><th>Algorithm</th><th>Pegs</th><th>Avg. Time (ms)</th></tr></thead>
                     <tbody id="algorithm-body"></tbody>

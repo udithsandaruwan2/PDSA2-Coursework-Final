@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let gameTimer = null;
     let gameSeconds = 0;
     let gameStartTime = null;
+    let algorithmChart = null; // Chart instance
 
     const mode3PegBtn = document.getElementById('mode-3peg');
     const mode4PegBtn = document.getElementById('mode-4peg');
@@ -121,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Try to fetch from API, use mock if it fails
             let data;
             try {
-                const response = await fetch(`/api/toh/new-game?disks=${diskCount}`);
+                const response = await fetch(`/api/toh/new-game?disks=${diskCount}&mode=${gameMode}`);
                 if (!response.ok) {
                     console.warn("API not available, using mock data");
                     data = mockResponse;
@@ -179,24 +180,17 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('tower-A') : 
             document.getElementById('tower-A-4');
         
-        // Make sure we have a valid source tower
         if (!sourceTower) {
             console.error('Source tower not found!');
             return;
         }
 
-        const towers = gameMode === '3peg' ? 
-            document.querySelectorAll('#three-peg-towers .tower') : 
-            document.querySelectorAll('#four-peg-towers .tower');
-
-        // Check if we have the base element
         const baseElement = sourceTower.querySelector('.base');
         if (!baseElement) {
             console.error('Base element not found in source tower');
             return;
         }
 
-        // Check if the peg element exists
         const pegElement = sourceTower.querySelector('.peg');
         if (!pegElement) {
             console.error('Peg element not found in source tower');
@@ -214,31 +208,26 @@ document.addEventListener('DOMContentLoaded', function() {
             disk.style.backgroundColor = diskColors[(i - 1) % diskColors.length];
             disk.textContent = i;
             
-            // Insert after the peg element
             sourceTower.insertBefore(disk, pegElement.nextSibling);
         }
     }
 
     function setupDragAndDrop() {
-        // Remove any existing event listeners to prevent duplicates
         const towers = gameMode === '3peg' ? 
             document.querySelectorAll('#three-peg-towers .tower') : 
             document.querySelectorAll('#four-peg-towers .tower');
         
-        // First, let's remove existing event listeners by cloning and replacing
         towers.forEach(tower => {
             const newTower = tower.cloneNode(true);
             tower.parentNode.replaceChild(newTower, tower);
         });
         
-        // Now let's re-select our towers and disks
         const updatedTowers = gameMode === '3peg' ? 
             document.querySelectorAll('#three-peg-towers .tower') : 
             document.querySelectorAll('#four-peg-towers .tower');
         
         const disks = document.querySelectorAll('.disk');
         
-        // Setup towers for drop
         updatedTowers.forEach(tower => {
             tower.addEventListener('dragover', (e) => {
                 e.preventDefault();
@@ -263,7 +252,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const sourceId = draggedTower.id.match(/[A-D]/)[0];
                 const targetId = targetTower.id.match(/[A-D]/)[0];
                 
-                // Move the disk
                 targetTower.insertBefore(draggingDisk, targetTower.querySelector('.peg').nextSibling);
                 draggingDisk.classList.add('animate-move');
                 setTimeout(() => draggingDisk.classList.remove('animate-move'), 500);
@@ -283,7 +271,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // Setup disks for drag
         disks.forEach(disk => {
             disk.setAttribute('draggable', true);
             
@@ -309,7 +296,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 draggedTower = null;
             });
 
-            // Make sure disks are properly positioned
             disk.style.zIndex = 10 - parseInt(disk.dataset.size);
         });
     }
@@ -326,7 +312,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const disks = Array.from(destinationTower.querySelectorAll('.disk'));
 
         if (disks.length === diskCount) {
-            // Check if they are in the right order
             const isSorted = disks.every((disk, index, array) => {
                 return index === 0 || parseInt(array[index-1].dataset.size) < parseInt(disk.dataset.size);
             });
@@ -345,6 +330,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             showModal(successModal);
             playerInputPanel.classList.remove('hidden');
+            // Automatically submit the solution
+            handleSubmitSolution();
         }
     }
 
@@ -374,7 +361,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            timeEl.textContent = (time * 1000).toFixed(4);
+            timeEl.textContent = (time * 1000).toFixed(6); // Display actual time in ms
             movesEl.innerHTML = '';
 
             if (moves.length === 0) {
@@ -395,53 +382,45 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function handleSubmitSolution() {
-        if (!gameInProgress) {
-            alert('Please start a new game to submit a solution.');
-            return;
-        }
-        const moveCount = prompt('Enter the number of moves:');
-        if (!moveCount || isNaN(moveCount) || moveCount < 1) {
-            alert('Please enter a valid number of moves.');
-            return;
-        }
-        const movesInput = prompt('Enter your move sequence (e.g., "1 A to C, 2 A to B, ..."):');
-        if (!movesInput) {
-            alert('Please enter a move sequence.');
-            return;
-        }
-        const moves = movesInput.split(',').map(m => {
-            const parts = m.trim().split(' ');
-            const disk = parseInt(parts[0]);
-            const source = parts[1];
-            const dest = parts[3];
-            return [disk, source, dest];
-        }).filter(move => move[0] && move[1] && move[2]);
-
-        if (parseInt(moveCount) !== moves.length) {
-            alert('Move count does not match the number of moves entered.');
+        if (!gameInProgress && moveHistory.length === 0) {
+            alert('No moves to submit. Please start a new game.');
             return;
         }
 
         try {
-            // For local testing without API
-            const success = true;
-            
-            // Try real API call if possible
-            let data = { success: true, message: 'Solution validated successfully!' };
-            try {
-                const response = await fetch('/api/toh/validate-solution', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ playerName: 'Anonymous', diskCount, moves })
-                });
-                data = await response.json();
-            } catch (error) {
-                console.warn("API not available, using mock validation:", error);
+            const moves = moveHistory; // Use moveHistory directly
+            if (moves.length === 0) {
+                alert('No moves recorded.');
+                return;
             }
-            
+
+            // Validate move format
+            const invalidMove = moves.find(move => 
+                !Array.isArray(move) || 
+                move.length !== 3 || 
+                typeof move[0] !== 'number' || 
+                !['A', 'B', 'C', 'D'].includes(move[1]) || 
+                !['A', 'B', 'C', 'D'].includes(move[2])
+            );
+            if (invalidMove) {
+                alert('Invalid move format in history.');
+                return;
+            }
+
+            const response = await fetch('/api/toh/validate-solution', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    playerName: 'Anonymous', // Will be updated in saveScore
+                    diskCount, 
+                    moves,
+                    mode: gameMode
+                })
+            });
+            const data = await response.json();
+
             if (data.success) {
                 yourMoves = moves.length;
-                moveHistory = moves;
                 yourMovesEl.textContent = yourMoves;
                 moveHistoryList.innerHTML = '';
                 moves.forEach((move, i) => {
@@ -451,30 +430,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     moveItem.textContent = `${i + 1}. Move disk ${disk} from ${source} to ${dest}`;
                     moveHistoryList.appendChild(moveItem);
                 });
-                
-                // Reset towers to match the submitted solution
-                clearTowers();
-                setupTowers();
-                
-                // Now apply all the moves
-                for (const [disk, source, dest] of moves) {
-                    const sourceTower = gameMode === '3peg' ? 
-                        document.getElementById(`tower-${source}`) : 
-                        document.getElementById(`tower-${source}-4`);
-                    const destTower = gameMode === '3peg' ? 
-                        document.getElementById(`tower-${dest}`) : 
-                        document.getElementById(`tower-${dest}-4`);
-                    
-                    // Find the disk with the right size
-                    const diskElement = Array.from(sourceTower.querySelectorAll('.disk'))
-                        .find(d => parseInt(d.dataset.size) === disk);
-                    
-                    if (diskElement) {
-                        destTower.insertBefore(diskElement, destTower.querySelector('.peg').nextSibling);
-                    }
-                }
-                
-                checkWinCondition();
+
+                // Update success message with comparison to minimum moves
+                const isOptimal = yourMoves === minMoves;
+                document.getElementById('success-message').innerHTML = `
+                    <p>Congratulations! You solved it in ${yourMoves} moves (Minimum: ${minMoves}).</p>
+                    <p>${isOptimal ? 'Optimal solution!' : 'Try to match the minimum moves!'}</p>
+                    <p>Time: ${Math.floor(gameSeconds / 60)}:${(gameSeconds % 60).toString().padStart(2, '0')}</p>
+                    <p>Score: ${Math.floor((minMoves / yourMoves) * 1000)} points</p>
+                `;
             } else {
                 alert(data.message);
             }
@@ -487,23 +451,31 @@ document.addEventListener('DOMContentLoaded', function() {
     async function saveScore() {
         const playerName = playerNameInput.value.trim() || 'Anonymous';
         try {
-            // For local testing without API
-            let success = true;
-            
-            // Try real API call if possible
-            try {
-                const response = await fetch('/api/toh/validate-solution', {
+            const movesJson = JSON.stringify(moveHistory);
+            const response = await fetch('/api/toh/validate-solution', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    playerName, 
+                    diskCount, 
+                    moves: moveHistory,
+                    mode: gameMode
+                })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                await fetch('/api/toh/save-game-result', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ playerName, diskCount, moves: moveHistory })
+                    body: JSON.stringify({
+                        playerName,
+                        diskCount,
+                        movesCount: moveHistory.length,
+                        movesJson,
+                        mode: gameMode
+                    })
                 });
-                const data = await response.json();
-                success = data.success;
-            } catch (error) {
-                console.warn("API not available, using mock validation:", error);
-            }
-            
-            if (success) {
                 playerInputPanel.classList.add('hidden');
                 loadScores();
                 switchTab('scores');
@@ -518,21 +490,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function loadScores() {
         try {
-            // For local testing without API
-            const mockScores = [
-                { player_name: 'Player 1', disk_count: 5, moves_count: 31 },
-                { player_name: 'Player 2', disk_count: 6, moves_count: 63 },
-                { player_name: 'Player 3', disk_count: 7, moves_count: 127 }
-            ];
-            
-            // Try real API call if possible
-            let scores = mockScores;
-            try {
-                const response = await fetch('/api/toh/scores');
-                scores = await response.json();
-            } catch (error) {
-                console.warn("API not available, using mock scores:", error);
-            }
+            const response = await fetch('/api/toh/scores');
+            const scores = await response.json();
             
             const scoresBody = document.getElementById('scores-body');
             scoresBody.innerHTML = '';
@@ -552,21 +511,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function loadAlgorithmComparison() {
         try {
-            // For local testing without API
-            const mockComparisonData = [
-                { disk_count: 5, algorithm_type: 'recursive', peg_count: 3, avg_time: 0.001 },
-                { disk_count: 5, algorithm_type: 'iterative', peg_count: 3, avg_time: 0.0008 },
-                { disk_count: 5, algorithm_type: 'frame_stewart', peg_count: 4, avg_time: 0.002 }
-            ];
-            
-            // Try real API call if possible
-            let data = mockComparisonData;
-            try {
-                const response = await fetch('/api/toh/algorithm-comparison');
-                data = await response.json();
-            } catch (error) {
-                console.warn("API not available, using mock algorithm data:", error);
-            }
+            const response = await fetch('/api/toh/algorithm-comparison');
+            const data = await response.json();
             
             const algorithmBody = document.getElementById('algorithm-body');
             algorithmBody.innerHTML = '';
@@ -581,13 +527,50 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${item.disk_count}</td>
                     <td>${algorithmName}</td>
                     <td>${item.peg_count}</td>
-                    <td>${(item.avg_time * 1000).toFixed(4)}</td>
+                    <td>${(item.avg_time * 1000).toFixed(6)}</td>
                 `;
                 algorithmBody.appendChild(row);
             });
+
+            // Render chart
+            const chartData = await fetch('/api/toh/algorithm-comparison-chart').then(res => res.json());
+            renderAlgorithmChart(chartData);
         } catch (error) {
             console.error('Error loading algorithm comparison:', error);
         }
+    }
+
+    function renderAlgorithmChart(chartData) {
+        const ctx = document.getElementById('algorithm-chart').getContext('2d');
+        if (algorithmChart) {
+            algorithmChart.destroy();
+        }
+        algorithmChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: chartData.datasets.map(dataset => ({
+                    ...dataset,
+                    borderColor: dataset.backgroundColor,
+                    fill: false,
+                    tension: 0.1
+                }))
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top' },
+                    title: { display: true, text: 'Algorithm Performance (ms)' }
+                },
+                scales: {
+                    x: { title: { display: true, text: 'Number of Disks' } },
+                    y: { 
+                        title: { display: true, text: 'Execution Time (ms)' },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
     }
 
     function switchTab(tabId) {
