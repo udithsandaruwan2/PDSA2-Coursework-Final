@@ -170,12 +170,15 @@ def validate_solution():
         if valid_solution:
             optimal_moves = len(frame_stewart_algorithm(disk_count, 'A', 'B', 'C', 'D')) if mode == '4peg' else (2 ** disk_count) - 1
             is_optimal = len(moves) == optimal_moves
+            # Calculate score_amount
+            score_amount = max(0, 1000 - (len(moves) - optimal_moves) * 100)
 
             return jsonify({
                 'success': True,
                 'message': f'Solution valid! Completed in {len(moves)} moves.',
                 'optimal': is_optimal,
-                'min_moves': optimal_moves
+                'min_moves': optimal_moves,
+                'score_amount': score_amount
             })
         else:
             return jsonify({
@@ -198,7 +201,6 @@ def save_game_result():
         moves_count = data.get('movesCount')
         moves_json = data.get('movesJson')
         mode = data.get('mode', '3peg')
-        score_amount = data.get('scoreAmount', 0)
 
         if not all([disk_count, moves_count, moves_json]):
             return jsonify({'success': False, 'message': 'Missing required fields'}), 400
@@ -206,16 +208,23 @@ def save_game_result():
         try:
             disk_count = int(disk_count)
             moves_count = int(moves_count)
-            score_amount = int(score_amount)
             if disk_count < 1 or moves_count < 1:
                 return jsonify({'success': False, 'message': 'Disk count and moves count must be positive'}), 400
-            if score_amount < 0:
-                return jsonify({'success': False, 'message': 'Score amount must be non-negative'}), 400
         except ValueError:
-            return jsonify({'success': False, 'message': 'Disk count, moves count, and score amount must be numbers'}), 400
+            return jsonify({'success': False, 'message': 'Disk count and moves count must be numbers'}), 400
+
+        # Validate moves and calculate score_amount
+        moves = json.loads(moves_json)
+        valid_solution = validate_move_sequence(disk_count, moves)
+        if not valid_solution:
+            return jsonify({'success': False, 'message': 'Invalid move sequence'}), 400
+
+        optimal_moves = len(frame_stewart_algorithm(disk_count, 'A', 'B', 'C', 'D')) if mode == '4peg' else (2 ** disk_count) - 1
+        score_amount = max(0, 1000 - (moves_count - optimal_moves) * 100)
+        logger.info(f"Calculated score_amount: {score_amount} for {moves_count} moves (optimal: {optimal_moves})")
 
         score_id = toh_db.save_game_result(player_name, disk_count, moves_count, moves_json, mode, score_amount)
-        return jsonify({'success': True, 'message': 'Game result saved successfully', 'score_id': score_id})
+        return jsonify({'success': True, 'message': 'Game result saved successfully', 'score_id': score_id, 'score_amount': score_amount})
     except Exception as e:
         logger.error(f"Error in save-game-result: {str(e)}\n{traceback.format_exc()}")
         return jsonify({'success': False, 'message': 'Server error occurred while saving game result'}), 500

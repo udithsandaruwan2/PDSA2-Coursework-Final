@@ -37,10 +37,18 @@ def init_db():
                     disk_count INTEGER NOT NULL,
                     moves_count INTEGER NOT NULL,
                     mode TEXT NOT NULL,
+                    score_amount INTEGER NOT NULL DEFAULT 0,
                     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
             logger.info("Scores table created or already exists")
+
+            # Add score_amount column if it doesn't exist
+            cursor.execute("PRAGMA table_info(scores)")
+            columns = [col['name'] for col in cursor.fetchall()]
+            if 'score_amount' not in columns:
+                cursor.execute('ALTER TABLE scores ADD COLUMN score_amount INTEGER NOT NULL DEFAULT 0')
+                logger.info("Added score_amount column to scores table")
             
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS algorithm_performance (
@@ -70,14 +78,14 @@ def init_db():
         logger.error(f"Error initializing database: {e}")
         raise
 
-def save_score(player_name, disk_count, moves_count, mode):
+def save_score(player_name, disk_count, moves_count, mode, score_amount=0):
     """Save player score to database"""
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                'INSERT INTO scores (player_name, disk_count, moves_count, mode) VALUES (?, ?, ?, ?)',
-                (player_name, disk_count, moves_count, mode)
+                'INSERT INTO scores (player_name, disk_count, moves_count, mode, score_amount) VALUES (?, ?, ?, ?, ?)',
+                (player_name, disk_count, moves_count, mode, score_amount)
             )
             conn.commit()
             return cursor.lastrowid
@@ -85,14 +93,14 @@ def save_score(player_name, disk_count, moves_count, mode):
         logger.error(f"Error saving score: {e}")
         raise
 
-def save_game_result(player_name, disk_count, moves_count, moves_json, mode="3peg"):
-    """Save complete game result including moves"""
+def save_game_result(player_name, disk_count, moves_count, moves_json, mode="3peg", score_amount=0):
+    """Save complete game result including moves and score amount"""
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                'INSERT INTO scores (player_name, disk_count, moves_count, mode) VALUES (?, ?, ?, ?)',
-                (player_name, disk_count, moves_count, mode)
+                'INSERT INTO scores (player_name, disk_count, moves_count, mode, score_amount) VALUES (?, ?, ?, ?, ?)',
+                (player_name, disk_count, moves_count, mode, score_amount)
             )
             score_id = cursor.lastrowid
             
@@ -101,6 +109,7 @@ def save_game_result(player_name, disk_count, moves_count, moves_json, mode="3pe
                 (score_id, moves_json)
             )
             conn.commit()
+            logger.info(f"Saved game result with score_id: {score_id}, score_amount: {score_amount}")
             return score_id
     except sqlite3.Error as e:
         logger.error(f"Error saving game result: {e}")
@@ -112,7 +121,7 @@ def get_scores(limit=20):
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                SELECT s.id, s.player_name, s.disk_count, s.moves_count, s.mode, s.timestamp
+                SELECT s.id, s.player_name, s.disk_count, s.moves_count, s.mode, s.score_amount, s.timestamp
                 FROM scores s
                 JOIN (
                     SELECT disk_count, MIN(moves_count) as min_moves
@@ -133,7 +142,7 @@ def get_all_scores():
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                SELECT id, player_name, disk_count, moves_count, mode, timestamp
+                SELECT id, player_name, disk_count, moves_count, mode, score_amount, timestamp
                 FROM scores
                 ORDER BY timestamp DESC
             ''')
@@ -149,7 +158,7 @@ def get_all_table_data():
             cursor = conn.cursor()
             tables = {
                 'scores': {
-                    'columns': ['id', 'player_name', 'disk_count', 'moves_count', 'mode', 'timestamp'],
+                    'columns': ['id', 'player_name', 'disk_count', 'moves_count', 'mode', 'score_amount', 'timestamp'],
                     'rows': []
                 },
                 'algorithm_performance': {
@@ -165,7 +174,7 @@ def get_all_table_data():
             # Fetch scores
             cursor.execute('SELECT * FROM scores')
             for row in cursor.fetchall():
-                tables['scores']['rows'].append([row['id'], row['player_name'], row['disk_count'], row['moves_count'], row['mode'], row['timestamp']])
+                tables['scores']['rows'].append([row['id'], row['player_name'], row['disk_count'], row['moves_count'], row['mode'], row['score_amount'], row['timestamp']])
 
             # Fetch algorithm_performance
             cursor.execute('SELECT * FROM algorithm_performance')
