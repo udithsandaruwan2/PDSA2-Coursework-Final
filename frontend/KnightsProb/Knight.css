@@ -1,0 +1,122 @@
+/* Center the entire content vertically and horizontally */
+body, html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;  /* Align to the top */
+  min-height: 100vh;        /* Let it grow taller than screen if needed */
+  background-color: #f8f9fa;
+  padding: 20px;
+  overflow-y: auto;         /* Scroll if content overflows */
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+
+
+#start-button,
+#restart-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#start-button:hover,
+#restart-button:hover {
+  background-color: #0056b3;
+}
+
+
+button {
+  background-color: #4CAF50; /* Soft green */
+  color: white;
+  padding: 12px 20px;
+  margin: 10px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+button:hover {
+  background-color: #45a049;
+  transform: scale(1.05);
+}
+
+button:active {
+  background-color: #3e8e41;
+}
+
+
+.content {
+  text-align: center;
+}
+
+/* You can keep all your existing styles below */
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+
+/*.chessboard {
+  display: grid;
+  grid-template-columns: repeat(8, 60px);
+  grid-template-rows: repeat(8, 60px);
+  margin: 20px auto;
+  border: 2px solid #333;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* subtle shadow */
+  /*border-radius: 8px; /* rounded corners */
+/*}*/
+
+.chessboard {
+  display: grid;
+  grid-template-columns: repeat(8, 60px);
+  grid-template-rows: repeat(8, 60px);
+  margin: 20px auto;
+  border: 2px solid #333;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* subtle shadow */
+  border-radius: 8px; /* rounded corners */
+  gap: 0; /* removes gaps between cells */
+}
+
+#main-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.square {
+  width: 60px;
+  height: 60px;
+  line-height: 60px;
+  vertical-align: middle;
+  font-size: 20px;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.white { background-color: #f0d9b5; }
+.black { background-color: #b58863; }
+.selected { background-color: #90ee90 !important; }
+.start { background-color: #4CAF50 !important; color: white; }
+.valid-move { background-color: yellow !important; }
