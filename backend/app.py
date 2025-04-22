@@ -1,22 +1,33 @@
+import logging
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 import os
-
 # Import the blueprint from your KnightTourRoute
 from KnightProbBackend.KnightTourRoute import knight_blueprint
+# Serve the main home.html page
+from tsp_backend.tsp_routes import tsp_bp  # Import the blueprint
+from tic_tac_toe_backend.tic_tac_toe_routes import tic_tac_toe_bp
 
-app = Flask(__name__, static_folder='../frontend')
-CORS(app)  # enable CORS for all routes
+# Configure centralized logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
-# Register the knight route blueprint
+# Initialize the Flask app
+app = Flask(__name__, template_folder='../frontend')
+
+app.register_blueprint(tsp_bp, url_prefix='/api')
+app.register_blueprint(tic_tac_toe_bp, url_prefix='/tic_tac_toe')
 app.register_blueprint(knight_blueprint)  
 
-# Serve the main home.html page
+CORS(app, resources={r"/api/*": {"origins": "*"}, r"/tic_tac_toe/*": {"origins": "*"}})
+
+print(app.url_map)
+
+# Serve home.html as the main entry point
 @app.route('/')
 def home():
     return send_from_directory(app.static_folder, 'home.html')
 
-# Serve any static file (CSS, JS, images, etc.)
 @app.route('/<path:filename>')
 def serve_static(filename):
     file_path = os.path.join(app.static_folder, filename)
@@ -25,5 +36,7 @@ def serve_static(filename):
     else:
         return "File not found", 404
 
+# Main entry point for the Flask app
 if __name__ == '__main__':
-    app.run(debug=True)
+    logger.info("Starting the Flask application...")
+    app.run(debug=True, use_reloader=False)

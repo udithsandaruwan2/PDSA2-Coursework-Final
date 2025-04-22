@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travelling Salesman Problem Game</title>
+    <link rel="stylesheet" href="tsp_assets/salesman.css">
+</head>
+<body>
+    <h1>Travelling Salesman Problem</h1>
+    <p id="resultMessage" class="result-message"></p>
+    <canvas id="cityCanvas" width="700" height="500"></canvas>
+
+    <div id="controls">
+        <button onclick="resetGame()">Reset</button>
+        <button onclick="submitRoute()">Submit Route</button>
+        <button onclick="compareWithAlgorithms()">Compare with Algorithms</button>
+        <button id="viewStatsButton" onclick="viewCityDistances()">View Statistics</button>
+
+    </div>
+
+    <div id="toggles" class="hidden-toggle">
+        <label><input type="checkbox" id="showHuman" checked onchange="drawCities()"> Show Human Path</label>
+        <label><input type="checkbox" id="showNN" onchange="drawCities()"> Show Nearest Neighbour Path</label>
+        <label><input type="checkbox" id="showbb" onchange="drawCities()"> Show Branch & Bound Path</label>
+        <!-- Added Held-Karp Path Toggle -->
+        <label><input type="checkbox" id="showHK" onchange="drawCities()"> Show Held-Karp Path</label>
+    </div>
+
+    <div id="result">
+        <p id="humanResult">Human Distance: N/A</p>
+        <p id="nnResult" class="hidden-result">Nearest Neighbour Distance: N/A</p>
+        <p id="bbResult" class="hidden-result">Branch & Bound Distance: N/A</p>
+        <!-- Held-Karp Result -->
+        <p id="hkResult" class="hidden-result">Held-Karp Distance: N/A</p>
+    </div>
+
+    <!-- Add this new section to display the Home City -->
+    <div id="homeCityInfo">
+        <p id="homeCity"></p> <!-- This will display the home city info -->
+    </div>
+
+    <div id="statsResult" class="hidden-result">
+        <div id="statsContent"></div> <!-- Where the table will be displayed -->
+    </div>
+
+    <script src="tsp_assets/salesman.js"></script>
+</body>
+</html>
