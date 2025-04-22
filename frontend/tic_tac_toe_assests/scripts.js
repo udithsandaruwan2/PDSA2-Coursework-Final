@@ -5,6 +5,7 @@ let currentBoard = [];
 async function startGame() {
     const algorithm = document.getElementById("algorithm").value;
     const playerName = document.getElementById("playerName").value;
+    localStorage.setItem("player_name", playerName);
 
     if (!algorithm) {
         alert("Please select an algorithm!");
@@ -67,6 +68,7 @@ function handleClick(i, j) {
 async function sendMoveToBackend(i, j) {
     const algorithm = document.getElementById("algorithm").value;
     const statusMessage = document.getElementById("statusMessage");
+    const playerName = localStorage.getItem("player_name");
 
     statusMessage.textContent = "Computer is thinking...";
     disableBoard();
@@ -77,6 +79,7 @@ async function sendMoveToBackend(i, j) {
         body: JSON.stringify({
             session_id: sessionId,
             move: [i, j],
+            playerName: playerName,
             algorithm: algorithm
         })
     });

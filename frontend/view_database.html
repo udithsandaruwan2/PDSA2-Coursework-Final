@@ -86,6 +86,27 @@
         {% endfor %}
     </table>
 
+    <h2>User Moves Log</h2>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Session ID</th>
+            <th>Name</th>
+            <th>Move</th>
+            <th>Timestamp</th>
+        </tr>
+        {% for u in user_moves %}
+        <tr>
+            <td>{{ u[0] }}</td>
+            <td>{{ u[1] }}</td>
+            <td>{{ u[2] }}</td>
+            <td>{{ u[3] }}</td>
+            <td>{{ u[4] }}</td>
+            <td>{{ u[5] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
     <h2>Computer Moves Log</h2>
     <table>
         <tr>
@@ -107,6 +128,7 @@
         </tr>
         {% endfor %}
     </table>
+
 </body>
 
 </html>

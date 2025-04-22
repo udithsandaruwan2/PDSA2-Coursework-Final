@@ -2,6 +2,7 @@ import sqlite3
 import os
 import json
 from datetime import datetime
+from tic_tac_toe_backend.GameEngine import games  # Assuming this is where your game sessions are stored
 
 class TicTacToeDatabase:
     def __init__(self, db_path="database/tic_tac_toe.db"):
@@ -55,6 +56,17 @@ class TicTacToeDatabase:
                             algorithm TEXT NOT NULL,
                             move TEXT NOT NULL,
                             duration_ms REAL NOT NULL,
+                            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    ''')
+
+                    # Create ai_move_logs table
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS user_move_logs (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            session_id TEXT NOT NULL,
+                            name TEXT NOT NULL,
+                            move TEXT NOT NULL,
                             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                         )
                     ''')
@@ -143,6 +155,21 @@ class TicTacToeDatabase:
         except sqlite3.Error as e:
             print(f"Error logging AI move: {e}")
 
+    def log_user_move(self, session_id, name, move):
+        if not name:
+            name = "Unknown"
+        try:
+            move_json = json.dumps(move)
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO user_move_logs (session_id, name, move)
+                    VALUES (?, ?, ?)
+                ''', (session_id, name, move_json))
+                conn.commit()
+        except sqlite3.Error as e:
+            print(f"Error logging AI move: {e}")
+
     def get_ai_move_logs(self):
         try:
             with sqlite3.connect(self.db_path) as conn:
@@ -151,4 +178,14 @@ class TicTacToeDatabase:
                 return cursor.fetchall()
         except sqlite3.Error as e:
             print(f"Error fetching AI move logs: {e}")
+            return []
+
+    def get_user_move_logs(self):
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute('SELECT * FROM user_move_logs ORDER BY timestamp DESC')
+                return cursor.fetchall()
+        except sqlite3.Error as e:
+            print(f"Error fetching User move logs: {e}")
             return []

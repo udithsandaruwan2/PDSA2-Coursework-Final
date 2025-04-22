@@ -12,6 +12,7 @@ def start_game():
     data = request.json
     session_id = data.get("session_id")
     player_name = data.get("player_name")  # Ensure player_name is included
+
     algorithm = data.get("algorithm", "minimax")  # Default to minimax if not provided
     
     if not session_id or not player_name:
@@ -29,9 +30,9 @@ def start_game():
 def make_move():
     data = request.json
     session_id = data.get("session_id")
-    player_name = data.get("player_name")
     x, y = data.get("move", (None, None))  # Default to None if no move is provided
     algorithm = data.get("algorithm", "minimax")
+    player_name = data.get("playerName")  # Ensure player_name is included
     
     # Validate if session exists
     game = games.get(session_id)
@@ -44,7 +45,8 @@ def make_move():
     try:
         # Apply the player's move
         game = apply_player_move(game, (x, y))
-        
+        print(f"Player move: ({x}, {y})")
+        db.log_user_move(session_id, name=player_name, move=[x, y])  # Log the user's move
         if game.is_terminal():
             return jsonify({"board": game.board_state.tolist(), "winner": game.winner})
 
@@ -95,8 +97,10 @@ def view_database():
     correct_responses = db.get_all_correct_responses()
     ai_moves = db.get_ai_move_logs()
     sessions = db.get_all_game_sessions()
+    user_moves = db.get_user_move_logs()
 
     return render_template("view_database.html", 
                            responses=correct_responses, 
                            moves=ai_moves,
-                           sessions=sessions)
+                           sessions=sessions, 
+                           user_moves=user_moves)
