@@ -1,505 +1,376 @@
-document.addEventListener('DOMContentLoaded', function() {
-    let gameMode = '3peg';
-    let diskCount = 0;
-    let minMoves = 0;
-    let yourMoves = 0;
-    let moveHistory = [];
-    let solutions = {};
-    let gameInProgress = false;
-    let draggingDisk = null;
-    let draggedTower = null;
-    let gameTimer = null;
-    let gameSeconds = 0;
-    let gameStartTime = null;
+from flask import Blueprint, jsonify, request, render_template_string
+import toh_db
+import random
+import time
+import json
+import logging
+import traceback
 
-    const mode3PegBtn = document.getElementById('mode-3peg');
-    const mode4PegBtn = document.getElementById('mode-4peg');
-    const threePegTowers = document.getElementById('three-peg-towers');
-    const fourPegTowers = document.getElementById('four-peg-towers');
-    const diskCountEl = document.getElementById('disk-count');
-    const minMovesEl = document.getElementById('min-moves');
-    const yourMovesEl = document.getElementById('your-moves');
-    const newGameBtn = document.getElementById('new-game');
-    const showSolutionBtn = document.getElementById('show-solution');
-    const submitSolutionBtn = document.getElementById('submit-solution');
-    const toggleMoveHistoryBtn = document.getElementById('toggle-move-history');
-    const solutionModal = document.getElementById('solution-modal');
-    const successModal = document.getElementById('success-modal');
-    const closeButtons = document.querySelectorAll('.close');
-    const playAgainBtn = document.getElementById('play-again');
-    const playerInputPanel = document.getElementById('player-input');
-    const playerNameInput = document.getElementById('player-name');
-    const saveScoreBtn = document.getElementById('save-score');
-    const cancelSaveBtn = document.getElementById('cancel-save');
-    const tabs = document.querySelectorAll('.tab');
-    const tabContents = document.querySelectorAll('.tab-content');
-    const solutionTabs = document.querySelectorAll('.solution-tab');
-    const solutionPanels = document.querySelectorAll('.solution-panel');
-    const minutesDisplay = document.getElementById('minutes');
-    const secondsDisplay = document.getElementById('seconds');
-    const moveHistoryList = document.getElementById('move-history-list');
-    const moveHistoryPanel = document.getElementById('move-history');
-    const diskSelector = document.getElementById('disk-selector');
+logger = logging.getLogger(__name__)
 
-    const diskColors = [
-        '#e74c3c', '#3498db', '#2ecc71', '#f39c12',
-        '#9b59b6', '#1abc9c', '#d35400', '#34495e',
-        '#c0392b', '#2980b9'
-    ];
+bp = Blueprint('toh', __name__, url_prefix='/api/toh')
 
-    function initEventListeners() {
-        mode3PegBtn.addEventListener('click', () => switchMode('3peg'));
-        mode4PegBtn.addEventListener('click', () => switchMode('4peg'));
-        newGameBtn.addEventListener('click', startNewGame);
-        showSolutionBtn.addEventListener('click', showSolution);
-        submitSolutionBtn.addEventListener('click', handleSubmitSolution);
-        toggleMoveHistoryBtn.addEventListener('click', toggleMoveHistory);
-        playAgainBtn.addEventListener('click', () => {
-            hideModal(successModal);
-            startNewGame();
-        });
-        saveScoreBtn.addEventListener('click', saveScore);
-        cancelSaveBtn.addEventListener('click', () => {
-            playerInputPanel.classList.add('hidden');
-        });
-        closeButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                hideModal(this.closest('.modal'));
-            });
-        });
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                switchTab(this.getAttribute('data-tab'));
-            });
-        });
-        solutionTabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                switchSolutionTab(this.getAttribute('data-solution'));
-            });
-        });
-        diskSelector.addEventListener('change', function() {
-            if (gameInProgress && confirm('Changing disk count will reset the game. Continue?')) {
-                startNewGame();
+def solve_toh_recursive(n, source, auxiliary, destination, moves=None):
+    if moves is None:
+        moves = []
+    if n <= 0:
+        return moves
+    if n == 1:
+        moves.append([1, source, destination])
+        return moves
+    solve_toh_recursive(n-1, source, destination, auxiliary, moves)
+    moves.append([n, source, destination])
+    solve_toh_recursive(n-1, auxiliary, source, destination, moves)
+    return moves
+
+def solve_toh_iterative(n, source, auxiliary, destination):
+    moves = []
+    if n <= 0:
+        return moves
+    
+    # Initialize the towers
+    towers = {'A': list(range(n, 0, -1)), 'B': [], 'C': []}
+    peg_names = {source: 'A', auxiliary: 'B', destination: 'C'}
+    
+    # Choose the correct move pattern based on whether n is even or odd
+    if n % 2 == 0:  # Even number of disks
+        move_order = [(source, auxiliary), (source, destination), (auxiliary, destination)]
+    else:  # Odd number of disks
+        move_order = [(source, destination), (source, auxiliary), (auxiliary, destination)]
+    
+    # Total number of moves required
+    total_moves = (2 ** n) - 1
+    
+    for i in range(1, total_moves + 1):
+        # Get the source and destination for this move based on the pattern
+        src, dst = move_order[(i - 1) % 3]
+        
+        # Perform the smallest legal move between the source and destination
+        src_tower = towers[peg_names[src]]
+        dst_tower = towers[peg_names[dst]]
+        
+        # If source is empty, move from destination to source
+        if not src_tower:
+            disk = dst_tower.pop()
+            src_tower.append(disk)
+            moves.append([disk, peg_names[dst], peg_names[src]])
+        # If destination is empty, move from source to destination
+        elif not dst_tower:
+            disk = src_tower.pop()
+            dst_tower.append(disk)
+            moves.append([disk, peg_names[src], peg_names[dst]])
+        # Move the smaller disk
+        elif src_tower[-1] < dst_tower[-1]:
+            disk = src_tower.pop()
+            dst_tower.append(disk)
+            moves.append([disk, peg_names[src], peg_names[dst]])
+        else:
+            disk = dst_tower.pop()
+            src_tower.append(disk)
+            moves.append([disk, peg_names[dst], peg_names[src]])
+    
+    return moves
+
+
+
+def frame_stewart_algorithm(n, source, aux1, aux2, destination):
+    moves = []
+    if n <= 0:
+        return moves
+    if n == 1:
+        moves.append([1, source, destination])
+        return moves
+    if n == 2:
+        moves.append([1, source, aux1])
+        moves.append([2, source, destination])
+        moves.append([1, aux1, destination])
+        return moves
+
+    k_lookup = {
+        1: 1, 2: 1, 3: 1, 4: 2, 5: 2,
+        6: 3, 7: 4, 8: 4, 9: 5, 10: 5
+    }
+    k = k_lookup.get(n, n // 2)
+
+    moves.extend(frame_stewart_algorithm(k, source, aux2, destination, aux1))
+    sub_moves = solve_toh_recursive(n - k, source, aux2, destination)
+    for disk, src, dst in sub_moves:
+        moves.append([disk + k, src, dst])
+    moves.extend(frame_stewart_algorithm(k, aux1, source, aux2, destination))
+
+    peg_names = {source: 'A', aux1: 'B', aux2: 'C', destination: 'D'}
+    return [[disk, peg_names[src], peg_names[dst]] for disk, src, dst in moves]
+
+@bp.route('/new-game', methods=['GET'])
+def new_game():
+    try:
+        disk_count = int(request.args.get('disks', random.randint(5, 10)))
+        mode = request.args.get('mode', '3peg')
+
+        if not 5 <= disk_count <= 10:
+            return jsonify({'error': 'Disk count must be between 5 and 10'}), 400
+
+        logger.info(f"Starting new game with {disk_count} disks, mode: {mode}")
+
+        # Number of iterations to ensure measurable time
+        iterations = 1000
+
+        # Measure recursive algorithm
+        start_time = time.perf_counter()
+        for _ in range(iterations):
+            recursive_solution = solve_toh_recursive(disk_count, 'A', 'B', 'C')
+        recursive_time = (time.perf_counter() - start_time) / iterations * 1000  # Convert to milliseconds
+        logger.debug(f"Recursive time: {recursive_time:.6f} ms")
+
+        # Measure iterative algorithm
+        start_time = time.perf_counter()
+        for _ in range(iterations):
+            iterative_solution = solve_toh_iterative(disk_count, 'A', 'B', 'C')
+        iterative_time = (time.perf_counter() - start_time) / iterations * 1000  # Convert to milliseconds
+        logger.debug(f"Iterative time: {iterative_time:.6f} ms")
+
+        # Measure Frame-Stewart algorithm
+        start_time = time.perf_counter()
+        for _ in range(iterations):
+            frame_stewart_solution = frame_stewart_algorithm(disk_count, 'A', 'B', 'C', 'D')
+        frame_stewart_time = (time.perf_counter() - start_time) / iterations * 1000  # Convert to milliseconds
+        logger.debug(f"Frame-Stewart time: {frame_stewart_time:.6f} ms")
+
+        toh_db.save_algorithm_performance(disk_count, 'recursive', 3, recursive_time)
+        toh_db.save_algorithm_performance(disk_count, 'iterative', 3, iterative_time)
+        toh_db.save_algorithm_performance(disk_count, 'frame_stewart', 4, frame_stewart_time)
+
+        min_moves = len(frame_stewart_solution) if mode == '4peg' else (2 ** disk_count) - 1
+
+        return jsonify({
+            'disk_count': disk_count,
+            'min_moves': min_moves,
+            'solutions': {
+                'recursive': {'moves': recursive_solution, 'time': recursive_time},
+                'iterative': {'moves': iterative_solution, 'time': iterative_time},
+                'frame_stewart': {'moves': frame_stewart_solution, 'time': frame_stewart_time}
             }
-        });
-    }
+        })
+    except ValueError as e:
+        logger.error(f"Value error in new-game: {str(e)}")
+        return jsonify({'error': 'Invalid input: disk count must be a number'}), 400
+    except Exception as e:
+        logger.error(f"Error in new-game: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': 'Server error occurred while starting new game'}), 500
 
-    function toggleMoveHistory() {
-        moveHistoryPanel.classList.toggle('hidden');
-    }
+@bp.route('/validate-solution', methods=['POST'])
+def validate_solution():
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'success': False, 'message': 'No data provided'}), 400
 
-    function switchMode(mode) {
-        if (gameInProgress && gameMode !== mode && !confirm('Changing modes will reset the game. Continue?')) {
-            return;
-        }
-        gameMode = mode;
-        mode3PegBtn.classList.toggle('active', mode === '3peg');
-        mode4PegBtn.classList.toggle('active', mode === '4peg');
-        threePegTowers.classList.toggle('hidden', mode !== '3peg');
-        fourPegTowers.classList.toggle('hidden', mode === '3peg');
-        if (gameInProgress) {
-            startNewGame();
-        }
-    }
+        player_name = data.get('playerName', 'Anonymous')
+        disk_count = data.get('diskCount')
+        moves = data.get('moves', [])
+        mode = data.get('mode', '3peg')
 
-    async function startNewGame() {
-        try {
-            const selectedDisks = diskSelector.value;
-            diskCount = selectedDisks === 'random' ? Math.floor(Math.random() * 6) + 5 : parseInt(selectedDisks);
-            const response = await fetch(`/api/toh/new-game?disks=${diskCount}`);
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to start new game');
-            }
-            const data = await response.json();
+        if not disk_count:
+            return jsonify({'success': False, 'message': 'Disk count is required'}), 400
+        if not moves:
+            return jsonify({'success': False, 'message': 'Moves sequence is required'}), 400
 
-            diskCount = data.disk_count;
-            minMoves = data.min_moves;
-            yourMoves = 0;
-            moveHistory = [];
-            solutions = data.solutions || {};
-            gameInProgress = true;
+        try:
+            disk_count = int(disk_count)
+            if disk_count < 1:
+                return jsonify({'success': False, 'message': 'Disk count must be positive'}), 400
+        except ValueError:
+            return jsonify({'success': False, 'message': 'Disk count must be a number'}), 400
 
-            moveHistoryList.innerHTML = '';
-            moveHistoryPanel.classList.add('hidden');
-            diskCountEl.textContent = diskCount;
-            minMovesEl.textContent = minMoves;
-            yourMovesEl.textContent = yourMoves;
+        valid_solution = validate_move_sequence(disk_count, moves)
+        if valid_solution:
+            # Calculate optimal moves based on mode
+            if mode == '4peg':
+                optimal_moves = len(frame_stewart_algorithm(disk_count, 'A', 'B', 'C', 'D'))
+            else:
+                optimal_moves = (2 ** disk_count) - 1
+                
+            is_optimal = len(moves) == optimal_moves
+            
+            # Improved scoring formula - more forgiving for larger puzzles
+            penalty_factor = min(100, 100 * (len(moves) - optimal_moves) / optimal_moves) if optimal_moves > 0 else 100
+            score_amount = int(max(0, 1000 - (penalty_factor * 10)))
 
-            clearTowers();
-            setupTowers();
-            setupDragAndDrop();
-            updateSolutionModal();
-            startGameTimer();
-        } catch (error) {
-            console.error('Error starting new game:', error);
-            alert(`Failed to start new game: ${error.message}. Please try again.`);
-        }
-    }
+            return jsonify({
+                'success': True,
+                'message': f'Solution valid! Completed in {len(moves)} moves.',
+                'optimal': is_optimal,
+                'min_moves': optimal_moves,
+                'score_amount': score_amount
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid solution. Ensure all disks are moved correctly.'
+            })
+    except Exception as e:
+        logger.error(f"Error in validate-solution: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'success': False, 'message': 'Server error occurred while validating solution'}), 500
 
-    function clearTowers() {
-        const towers = gameMode === '3peg' ? 
-            document.querySelectorAll('#three-peg-towers .tower') : 
-            document.querySelectorAll('#four-peg-towers .tower');
-        towers.forEach(tower => {
-            tower.querySelectorAll('.disk').forEach(disk => disk.remove());
-        });
-    }
+@bp.route('/save-game-result', methods=['POST'])
+def save_game_result():
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'success': False, 'message': 'No data provided'}), 400
 
-    function setupTowers() {
-        const sourceTower = gameMode === '3peg' ? 
-            document.getElementById('tower-A') : 
-            document.getElementById('tower-A-4');
-        const towers = gameMode === '3peg' ? 
-            document.querySelectorAll('#three-peg-towers .tower') : 
-            document.querySelectorAll('#four-peg-towers .tower');
+        player_name = data.get('playerName', 'Anonymous')
+        disk_count = data.get('diskCount')
+        moves_count = data.get('movesCount')
+        moves_json = data.get('movesJson')
+        mode = data.get('mode', '3peg')
 
-        for (let i = diskCount; i > 0; i--) {
-            const disk = document.createElement('div');
-            disk.className = 'disk';
-            disk.dataset.size = i;
-            const maxWidth = sourceTower.querySelector('.base').offsetWidth * 0.9;
-            const minWidth = maxWidth * 0.3;
-            const width = minWidth + ((maxWidth - minWidth) * (i / diskCount));
-            disk.style.width = `${width}px`;
-            disk.style.backgroundColor = diskColors[(i - 1) % diskColors.length];
-            disk.textContent = i;
-            sourceTower.insertBefore(disk, sourceTower.querySelector('.peg').nextSibling);
-        }
-    }
+        if not all([disk_count, moves_count, moves_json]):
+            return jsonify({'success': False, 'message': 'Missing required fields'}), 400
 
-    function setupDragAndDrop() {
-        const disks = document.querySelectorAll('.disk');
-        const towers = gameMode === '3peg' ? 
-            document.querySelectorAll('#three-peg-towers .tower') : 
-            document.querySelectorAll('#four-peg-towers .tower');
+        try:
+            disk_count = int(disk_count)
+            moves_count = int(moves_count)
+            if disk_count < 1 or moves_count < 1:
+                return jsonify({'success': False, 'message': 'Disk count and moves count must be positive'}), 400
+        except ValueError:
+            return jsonify({'success': False, 'message': 'Disk count and moves count must be numbers'}), 400
 
-        // Named functions for event listeners to allow removal
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-        }
+        moves = json.loads(moves_json)
+        valid_solution = validate_move_sequence(disk_count, moves)
+        if not valid_solution:
+            return jsonify({'success': False, 'message': 'Invalid move sequence'}), 400
 
-        function handleDrop(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            if (!draggingDisk || this === draggedTower) return;
-            const targetTower = this;
-            const diskSize = parseInt(draggingDisk.dataset.size);
-            const topDiskOnTarget = getTopDisk(targetTower);
-            if (topDiskOnTarget && parseInt(topDiskOnTarget.dataset.size) < diskSize) {
-                alert('Cannot place a larger disk on a smaller one.');
-                return;
-            }
+        # Calculate optimal moves based on mode
+        if mode == '4peg':
+            optimal_moves = len(frame_stewart_algorithm(disk_count, 'A', 'B', 'C', 'D'))
+        else:
+            optimal_moves = (2 ** disk_count) - 1
+            
+        # Improved scoring formula - more forgiving for larger puzzles
+        # Base score of 1000, with penalty based on percentage above optimal
+        penalty_factor = min(100, 100 * (moves_count - optimal_moves) / optimal_moves) if optimal_moves > 0 else 100
+        score_amount = int(max(0, 1000 - (penalty_factor * 10)))
+        
+        logger.info(f"Calculated score_amount: {score_amount} for {moves_count} moves (optimal: {optimal_moves})")
 
-            const sourceId = draggedTower.id.includes('-4') ? 
-                draggedTower.id.charAt(draggedTower.id.length - 1) : 
-                draggedTower.id.charAt(draggedTower.id.length - 1);
-            const targetId = targetTower.id.includes('-4') ? 
-                targetTower.id.charAt(targetTower.id.length - 1) : 
-                targetTower.id.charAt(targetTower.id.length - 1);
+        score_id = toh_db.save_game_result(player_name, disk_count, moves_count, moves_json, mode, score_amount)
+        return jsonify({
+            'success': True, 
+            'message': 'Game result saved successfully', 
+            'score_id': score_id, 
+            'score_amount': score_amount,
+            'optimal_moves': optimal_moves
+        })
+    except Exception as e:
+        logger.error(f"Error in save-game-result: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'success': False, 'message': 'Server error occurred while saving game result'}), 500
 
-            targetTower.insertBefore(draggingDisk, targetTower.querySelector('.peg').nextSibling);
-            draggingDisk.classList.add('animate-move');
-            setTimeout(() => draggingDisk.classList.remove('animate-move'), 500);
+def validate_move_sequence(disk_count, moves):
+    towers = {'A': list(range(disk_count, 0, -1)), 'B': [], 'C': [], 'D': []}
+    for disk, source, dest in moves:
+        if source not in towers or dest not in towers or not towers[source]:
+            return False
+        top_disk = towers[source][-1]
+        if top_disk != disk:
+            return False
+        if towers[dest] and towers[dest][-1] < disk:
+            return False
+        towers[dest].append(towers[source].pop())
 
-            yourMoves++;
-            yourMovesEl.textContent = yourMoves;
-            moveHistory.push([diskSize, sourceId, targetId]);
+    target_peg = 'D' if len(towers['D']) > 0 else 'C'
+    if len(towers[target_peg]) != disk_count:
+        return False
+    for i in range(len(towers[target_peg]) - 1):
+        if towers[target_peg][i] < towers[target_peg][i + 1]:
+            return False
+    return True
 
-            const moveItem = document.createElement('div');
-            moveItem.className = 'move-item';
-            moveItem.textContent = `${yourMoves}. Move disk ${diskSize} from ${sourceId} to ${targetId}`;
-            moveHistoryList.appendChild(moveItem);
-            moveHistoryPanel.classList.remove('hidden');
-            moveHistoryList.scrollTop = moveHistoryList.scrollHeight;
+@bp.route('/scores', methods=['GET'])
+def get_scores():
+    try:
+        scores = toh_db.get_scores()
+        return jsonify([dict(score) for score in scores])
+    except Exception as e:
+        logger.error(f"Error getting scores: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': 'Server error occurred while fetching scores'}), 500
 
-            checkWinCondition();
-        }
+@bp.route('/all-scores', methods=['GET'])
+def get_all_scores():
+    try:
+        scores = toh_db.get_all_scores()
+        return jsonify([dict(score) for score in scores])
+    except Exception as e:
+        logger.error(f"Error getting all scores: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': 'Server error occurred while fetching all scores'}), 500
 
-        // Remove existing listeners to prevent duplicates
-        towers.forEach(tower => {
-            tower.removeEventListener('dragover', handleDragOver);
-            tower.removeEventListener('drop', handleDrop);
-            tower.addEventListener('dragover', handleDragOver);
-            tower.addEventListener('drop', handleDrop);
-        });
+@bp.route('/db-tables', methods=['GET'])
+def get_db_tables():
+    try:
+        tables_data = toh_db.get_all_table_data()
+        html = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <title>Database Tables</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                h1 { text-align: center; }
+                h2 { margin-top: 20px; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f2f2f2; }
+                tr:nth-child(even) { background-color: #f9f9f9; }
+            </style>
+        </head>
+        <body>
+            <h1>Database Tables</h1>
+            {% for table_name, data in tables.items() %}
+                <h2>{{ table_name }}</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            {% for column in data['columns'] %}
+                                <th>{{ column }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data['rows'] %}
+                            <tr>
+                                {% for value in row %}
+                                    <td>{{ value }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endfor %}
+        </body>
+        </html>
+        """
+        return render_template_string(html, tables=tables_data)
+    except Exception as e:
+        logger.error(f"Error getting database tables: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': 'Server error occurred while fetching database tables'}), 500
 
-        disks.forEach(disk => {
-            disk.setAttribute('draggable', true);
-            disk.addEventListener('dragstart', function(e) {
-                const tower = this.parentElement;
-                const topDisk = getTopDisk(tower);
-                if (this !== topDisk) {
-                    e.preventDefault();
-                    return;
-                }
-                draggingDisk = this;
-                draggedTower = tower;
-                this.classList.add('dragging');
-                e.dataTransfer.setData('text/plain', this.dataset.size);
-            });
-            disk.addEventListener('dragend', function() {
-                this.classList.remove('dragging');
-                draggingDisk = null;
-            });
-        });
-    }
+@bp.route('/algorithm-comparison', methods=['GET'])
+def get_algorithm_comparison():
+    try:
+        performance_data = toh_db.get_algorithm_performance()
+        logger.debug(f"Algorithm comparison data: {[dict(perf) for perf in performance_data]}")
+        return jsonify([dict(perf) for perf in performance_data])
+    except Exception as e:
+        logger.error(f"Error getting algorithm comparison: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': 'Server error occurred while fetching algorithm data'}), 500
 
-    function getTopDisk(tower) {
-        const disks = Array.from(tower.querySelectorAll('.disk'));
-        return disks.length > 0 ? disks[0] : null;
-    }
-
-    function checkWinCondition() {
-        const destinationTower = gameMode === '3peg' ? 
-            document.getElementById('tower-C') : 
-            document.getElementById('tower-D-4');
-        const disks = Array.from(destinationTower.querySelectorAll('.disk'));
-
-        if (disks.length === diskCount) {
-            const sizes = disks.map(disk => parseInt(disk.dataset.size));
-            const isValid = sizes.every((size, i) => i === 0 || size < sizes[i-1]);
-            if (!isValid) return;
-
-            gameInProgress = false;
-            stopGameTimer();
-
-            const totalScore = Math.floor((minMoves / yourMoves) * 1000);
-            document.getElementById('success-message').innerHTML = `
-                <p>Congratulations! You solved it in ${yourMoves} moves (Minimum: ${minMoves}).</p>
-                <p>Time: ${Math.floor(gameSeconds / 60)}:${(gameSeconds % 60).toString().padStart(2, '0')}</p>
-                <p>Score: ${totalScore} points</p>
-            `;
-
-            showModal(successModal);
-            playerInputPanel.classList.remove('hidden');
-        }
-    }
-
-    function showSolution() {
-        if (!gameInProgress) {
-            alert('Please start a new game to view solutions.');
-            return;
-        }
-        updateSolutionModal();
-        showModal(solutionModal);
-    }
-
-    function updateSolutionModal() {
-        const solutionsData = [
-            { id: 'recursive', name: 'Recursive (3-peg)', moves: solutions.recursive?.moves || [], time: solutions.recursive?.time || 0 },
-            { id: 'iterative', name: 'Iterative (3-peg)', moves: solutions.iterative?.moves || [], time: solutions.iterative?.time || 0 },
-            { id: 'frame_stewart', name: 'Frame-Stewart (4-peg)', moves: solutions.frame_stewart?.moves || [], time: solutions.frame_stewart?.time || 0 }
-        ];
-
-        solutionsData.forEach(({ id, name, moves, time }) => {
-            const panel = document.getElementById(`${id}-solution`);
-            const timeEl = document.getElementById(`${id}-time`);
-            const movesEl = document.getElementById(`${id}-moves`);
-
-            if (!panel || !timeEl || !movesEl) {
-                console.error(`Solution panel elements missing for ${id}`);
-                return;
-            }
-
-            timeEl.textContent = (time * 1000).toFixed(4);
-            movesEl.innerHTML = '';
-
-            if (moves.length === 0) {
-                const errorItem = document.createElement('div');
-                errorItem.className = 'move-item';
-                errorItem.textContent = `No moves available for ${name}.`;
-                movesEl.appendChild(errorItem);
-            } else {
-                moves.forEach((move, index) => {
-                    const [disk, source, dest] = move;
-                    const moveItem = document.createElement('div');
-                    moveItem.className = 'move-item';
-                    moveItem.textContent = `${index + 1}. Move disk ${disk} from ${source} to ${dest}`;
-                    movesEl.appendChild(moveItem);
-                });
-            }
-        });
-    }
-
-    async function handleSubmitSolution() {
-        if (!gameInProgress) {
-            alert('Please start a new game to submit a solution.');
-            return;
-        }
-        const moveCount = prompt('Enter the number of moves:');
-        if (!moveCount || isNaN(moveCount) || moveCount < 1) {
-            alert('Please enter a valid number of moves.');
-            return;
-        }
-        const movesInput = prompt('Enter your move sequence (e.g., "1 A to C, 2 A to B, ..."):');
-        if (!movesInput) {
-            alert('Please enter a move sequence.');
-            return;
-        }
-        const moves = movesInput.split(',').map(m => {
-            const parts = m.trim().split(' ');
-            const disk = parseInt(parts[0]);
-            const source = parts[1];
-            const dest = parts[3];
-            return [disk, source, dest];
-        }).filter(move => move[0] && move[1] && move[2]);
-
-        if (moves.length != moveCount) {
-            alert('Move count does not match the number of moves entered.');
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/toh/validate-solution', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ playerName: 'Anonymous', diskCount, moves })
-            });
-            const data = await response.json();
-            if (data.success) {
-                yourMoves = moves.length;
-                moveHistory = moves;
-                yourMovesEl.textContent = yourMoves;
-                moveHistoryList.innerHTML = '';
-                moves.forEach((move, i) => {
-                    const [disk, source, dest] = move;
-                    const moveItem = document.createElement('div');
-                    moveItem.className = 'move-item';
-                    moveItem.textContent = `${i + 1}. Move disk ${disk} from ${source} to ${dest}`;
-                    moveHistoryList.appendChild(moveItem);
-                });
-                checkWinCondition();
-            } else {
-                alert(data.message);
-            }
-        } catch (error) {
-            console.error('Error validating solution:', error);
-            alert('Failed to validate solution. Please try again.');
-        }
-    }
-
-    async function saveScore() {
-        const playerName = playerNameInput.value.trim() || 'Anonymous';
-        try {
-            const response = await fetch('/api/toh/validate-solution', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ playerName, diskCount, moves: moveHistory })
-            });
-            const data = await response.json();
-            if (data.success) {
-                playerInputPanel.classList.add('hidden');
-                loadScores();
-                switchTab('scores');
-            } else {
-                alert(data.message);
-            }
-        } catch (error) {
-            console.error('Error saving score:', error);
-            alert('Failed to save score. Please try again.');
-        }
-    }
-
-    async function loadScores() {
-        try {
-            const response = await fetch('/api/toh/scores');
-            const scores = await response.json();
-            const scoresBody = document.getElementById('scores-body');
-            scoresBody.innerHTML = '';
-            scores.forEach(score => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${score.player_name}</td>
-                    <td>${score.disk_count}</td>
-                    <td>${score.moves_count}</td>
-                `;
-                scoresBody.appendChild(row);
-            });
-        } catch (error) {
-            console.error('Error loading scores:', error);
-        }
-    }
-
-    async function loadAlgorithmComparison() {
-        try {
-            const response = await fetch('/api/toh/algorithm-comparison');
-            const data = await response.json();
-            const algorithmBody = document.getElementById('algorithm-body');
-            algorithmBody.innerHTML = '';
-            data.forEach(item => {
-                const row = document.createElement('tr');
-                const algorithmName = {
-                    'recursive': 'Recursive',
-                    'iterative': 'Iterative',
-                    'frame_stewart': 'Frame-Stewart'
-                }[item.algorithm_type] || 'Unknown';
-                row.innerHTML = `
-                    <td>${item.disk_count}</td>
-                    <td>${algorithmName}</td>
-                    <td>${item.peg_count}</td>
-                    <td>${(item.avg_time * 1000).toFixed(4)}</td>
-                `;
-                algorithmBody.appendChild(row);
-            });
-        } catch (error) {
-            console.error('Error loading algorithm comparison:', error);
-        }
-    }
-
-    function switchTab(tabId) {
-        tabs.forEach(tab => tab.classList.toggle('active', tab.getAttribute('data-tab') === tabId));
-        tabContents.forEach(content => content.classList.toggle('active', content.id === `${tabId}-content`));
-        if (tabId === 'scores') loadScores();
-        else if (tabId === 'algorithms') loadAlgorithmComparison();
-    }
-
-    function switchSolutionTab(solutionId) {
-        solutionTabs.forEach(tab => tab.classList.toggle('active', tab.getAttribute('data-solution') === solutionId));
-        solutionPanels.forEach(panel => panel.classList.toggle('active', panel.id === `${solutionId}-solution`));
-    }
-
-    function showModal(modal) {
-        modal.classList.remove('hidden');
-        modal.classList.add('show');
-    }
-
-    function hideModal(modal) {
-        modal.classList.remove('show');
-        modal.classList.add('hidden');
-    }
-
-    function startGameTimer() {
-        gameSeconds = 0;
-        updateTimerDisplay();
-        if (gameTimer) clearInterval(gameTimer);
-        gameStartTime = Date.now();
-        gameTimer = setInterval(() => {
-            gameSeconds = Math.floor((Date.now() - gameStartTime) / 1000);
-            updateTimerDisplay();
-        }, 1000);
-    }
-
-    function updateTimerDisplay() {
-        const minutes = Math.floor(gameSeconds / 60);
-        const seconds = gameSeconds % 60;
-        minutesDisplay.textContent = minutes.toString().padStart(2, '0');
-        secondsDisplay.textContent = seconds.toString().padStart(2, '0');
-    }
-
-    function stopGameTimer() {
-        if (gameTimer) {
-            clearInterval(gameTimer);
-            gameTimer = null;
-        }
-    }
-
-    function initGame() {
-        initEventListeners();
-        switchTab('instructions');
-        startNewGame();
-    }
-
-    initGame();
-});
+@bp.route('/algorithm-comparison-chart', methods=['GET'])
+def get_algorithm_comparison_chart():
+    try:
+        performance_data = toh_db.get_algorithm_comparison_chart_data()
+        logger.debug(f"Algorithm comparison chart data: {performance_data}")
+        return jsonify(performance_data)
+    except Exception as e:
+        logger.error(f"Error getting chart data: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': 'Server error occurred while fetching chart data'}), 500

@@ -326,7 +326,9 @@ document.addEventListener('DOMContentLoaded', function() {
             gameInProgress = false;
             stopGameTimer();
 
-            const totalScore = Math.floor((minMoves / yourMoves) * 1000);
+            // Replace the current score calculation with:
+            const penalty_factor = Math.min(100, 100 * (yourMoves - minMoves) / minMoves);
+            const totalScore = Math.max(0, Math.floor(1000 - (penalty_factor * 10)));
             document.getElementById('success-message').innerHTML = `
                 <p>Congratulations! You solved it in ${yourMoves} moves (Minimum: ${minMoves}).</p>
                 <p>Time: ${Math.floor(gameSeconds / 60)}:${(gameSeconds % 60).toString().padStart(2, '0')}</p>
@@ -366,7 +368,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            timeEl.textContent = (time * 1000).toFixed(6); // Display actual time in ms
+            // Log raw time to verify
+            console.log(`Raw time for ${id}: ${time} ms`);
+
+            // Display time directly in milliseconds with 'ms' unit
+            timeEl.textContent = time.toFixed(6) + ' ms';
+
             movesEl.innerHTML = '';
 
             if (moves.length === 0) {
@@ -552,6 +559,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch('/api/toh/algorithm-comparison');
             const data = await response.json();
             
+            // Log raw data to verify
+            console.log('Algorithm comparison data:', data);
+
             const algorithmBody = document.getElementById('algorithm-body');
             algorithmBody.innerHTML = '';
             data.forEach(item => {
@@ -565,13 +575,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${item.disk_count}</td>
                     <td>${algorithmName}</td>
                     <td>${item.peg_count}</td>
-                    <td>${(item.avg_time * 1000).toFixed(6)}</td>
+                    <td>${item.avg_time.toFixed(6)} ms</td>
                 `;
                 algorithmBody.appendChild(row);
             });
 
             // Render chart
             const chartData = await fetch('/api/toh/algorithm-comparison-chart').then(res => res.json());
+            console.log('Algorithm chart data:', chartData);
             renderAlgorithmChart(chartData);
         } catch (error) {
             console.error('Error loading algorithm comparison:', error);

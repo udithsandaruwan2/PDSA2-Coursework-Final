@@ -27,42 +27,53 @@ def solve_toh_iterative(n, source, auxiliary, destination):
     moves = []
     if n <= 0:
         return moves
-    total_moves = (2 ** n) - 1
+    
+    # Initialize the towers
     towers = {'A': list(range(n, 0, -1)), 'B': [], 'C': []}
     peg_names = {source: 'A', auxiliary: 'B', destination: 'C'}
-
+    
+    # Choose the correct move pattern based on whether n is even or odd
+    if n % 2 == 0:  # Even number of disks
+        move_order = [(source, auxiliary), (source, destination), (auxiliary, destination)]
+    else:  # Odd number of disks
+        move_order = [(source, destination), (source, auxiliary), (auxiliary, destination)]
+    
+    # Total number of moves required
+    total_moves = (2 ** n) - 1
+    
     for i in range(1, total_moves + 1):
-        if i % 3 == 1:
-            move_disk(towers, source, destination, moves, peg_names)
-        elif i % 3 == 2:
-            move_disk(towers, source, auxiliary, moves, peg_names)
+        # Get the source and destination for this move based on the pattern
+        src, dst = move_order[(i - 1) % 3]
+        
+        # Perform the smallest legal move between the source and destination
+        src_tower = towers[peg_names[src]]
+        dst_tower = towers[peg_names[dst]]
+        
+        # If source is empty, move from destination to source
+        if not src_tower:
+            disk = dst_tower.pop()
+            src_tower.append(disk)
+            moves.append([disk, peg_names[dst], peg_names[src]])
+        # If destination is empty, move from source to destination
+        elif not dst_tower:
+            disk = src_tower.pop()
+            dst_tower.append(disk)
+            moves.append([disk, peg_names[src], peg_names[dst]])
+        # Move the smaller disk
+        elif src_tower[-1] < dst_tower[-1]:
+            disk = src_tower.pop()
+            dst_tower.append(disk)
+            moves.append([disk, peg_names[src], peg_names[dst]])
         else:
-            move_disk(towers, auxiliary, destination, moves, peg_names)
+            disk = dst_tower.pop()
+            src_tower.append(disk)
+            moves.append([disk, peg_names[dst], peg_names[src]])
+    
     return moves
 
-def move_disk(towers, source, dest, moves, peg_names):
-    src_disks = towers[peg_names[source]]
-    dest_disks = towers[peg_names[dest]]
-    if not src_disks:
-        if dest_disks:
-            disk = dest_disks.pop()
-            src_disks.append(disk)
-            moves.append([disk, peg_names[dest], peg_names[source]])
-    elif not dest_disks or src_disks[-1] < dest_disks[-1]:
-        disk = src_disks.pop()
-        dest_disks.append(disk)
-        moves.append([disk, peg_names[source], peg_names[dest]])
-    else:
-        disk = dest_disks.pop()
-        src_disks.append(disk)
-        moves.append([disk, peg_names[dest], peg_names[source]])
+
 
 def frame_stewart_algorithm(n, source, aux1, aux2, destination):
-    """
-    Frame-Stewart algorithm for 4-peg Tower of Hanoi.
-    Time complexity: O(2^(n^0.5)) - better than standard 3-peg solution
-    Space complexity: O(n) - to store disk positions
-    """
     moves = []
     if n <= 0:
         return moves
@@ -75,25 +86,18 @@ def frame_stewart_algorithm(n, source, aux1, aux2, destination):
         moves.append([1, aux1, destination])
         return moves
 
-    # Use precomputed optimal k for 1 ≤ n ≤ 10
     k_lookup = {
         1: 1, 2: 1, 3: 1, 4: 2, 5: 2,
         6: 3, 7: 4, 8: 4, 9: 5, 10: 5
     }
-    k = k_lookup.get(n, n // 2)  # fallback to n//2 if not in lookup
+    k = k_lookup.get(n, n // 2)
 
-    # Step 1: Move k smallest disks to aux1 using 4 pegs
     moves.extend(frame_stewart_algorithm(k, source, aux2, destination, aux1))
-
-    # Step 2: Move n-k disks to destination using 3 pegs
     sub_moves = solve_toh_recursive(n - k, source, aux2, destination)
     for disk, src, dst in sub_moves:
         moves.append([disk + k, src, dst])
-
-    # Step 3: Move k disks from aux1 to destination using 4 pegs
     moves.extend(frame_stewart_algorithm(k, aux1, source, aux2, destination))
 
-    # Convert to peg names A, B, C, D
     peg_names = {source: 'A', aux1: 'B', aux2: 'C', destination: 'D'}
     return [[disk, peg_names[src], peg_names[dst]] for disk, src, dst in moves]
 
@@ -108,17 +112,29 @@ def new_game():
 
         logger.info(f"Starting new game with {disk_count} disks, mode: {mode}")
 
-        start_time = time.time()
-        recursive_solution = solve_toh_recursive(disk_count, 'A', 'B', 'C')
-        recursive_time = time.time() - start_time
+        # Number of iterations to ensure measurable time
+        iterations = 1000
 
-        start_time = time.time()
-        iterative_solution = solve_toh_iterative(disk_count, 'A', 'B', 'C')
-        iterative_time = time.time() - start_time
+        # Measure recursive algorithm
+        start_time = time.perf_counter()
+        for _ in range(iterations):
+            recursive_solution = solve_toh_recursive(disk_count, 'A', 'B', 'C')
+        recursive_time = (time.perf_counter() - start_time) / iterations * 1000  # Convert to milliseconds
+        logger.debug(f"Recursive time: {recursive_time:.6f} ms")
 
-        start_time = time.time()
-        frame_stewart_solution = frame_stewart_algorithm(disk_count, 'A', 'B', 'C', 'D')
-        frame_stewart_time = time.time() - start_time
+        # Measure iterative algorithm
+        start_time = time.perf_counter()
+        for _ in range(iterations):
+            iterative_solution = solve_toh_iterative(disk_count, 'A', 'B', 'C')
+        iterative_time = (time.perf_counter() - start_time) / iterations * 1000  # Convert to milliseconds
+        logger.debug(f"Iterative time: {iterative_time:.6f} ms")
+
+        # Measure Frame-Stewart algorithm
+        start_time = time.perf_counter()
+        for _ in range(iterations):
+            frame_stewart_solution = frame_stewart_algorithm(disk_count, 'A', 'B', 'C', 'D')
+        frame_stewart_time = (time.perf_counter() - start_time) / iterations * 1000  # Convert to milliseconds
+        logger.debug(f"Frame-Stewart time: {frame_stewart_time:.6f} ms")
 
         toh_db.save_algorithm_performance(disk_count, 'recursive', 3, recursive_time)
         toh_db.save_algorithm_performance(disk_count, 'iterative', 3, iterative_time)
@@ -168,10 +184,17 @@ def validate_solution():
 
         valid_solution = validate_move_sequence(disk_count, moves)
         if valid_solution:
-            optimal_moves = len(frame_stewart_algorithm(disk_count, 'A', 'B', 'C', 'D')) if mode == '4peg' else (2 ** disk_count) - 1
+            # Calculate optimal moves based on mode
+            if mode == '4peg':
+                optimal_moves = len(frame_stewart_algorithm(disk_count, 'A', 'B', 'C', 'D'))
+            else:
+                optimal_moves = (2 ** disk_count) - 1
+                
             is_optimal = len(moves) == optimal_moves
-            # Calculate score_amount
-            score_amount = max(0, 1000 - (len(moves) - optimal_moves) * 100)
+            
+            # Improved scoring formula - more forgiving for larger puzzles
+            penalty_factor = min(100, 100 * (len(moves) - optimal_moves) / optimal_moves) if optimal_moves > 0 else 100
+            score_amount = int(max(0, 1000 - (penalty_factor * 10)))
 
             return jsonify({
                 'success': True,
@@ -213,18 +236,32 @@ def save_game_result():
         except ValueError:
             return jsonify({'success': False, 'message': 'Disk count and moves count must be numbers'}), 400
 
-        # Validate moves and calculate score_amount
         moves = json.loads(moves_json)
         valid_solution = validate_move_sequence(disk_count, moves)
         if not valid_solution:
             return jsonify({'success': False, 'message': 'Invalid move sequence'}), 400
 
-        optimal_moves = len(frame_stewart_algorithm(disk_count, 'A', 'B', 'C', 'D')) if mode == '4peg' else (2 ** disk_count) - 1
-        score_amount = max(0, 1000 - (moves_count - optimal_moves) * 100)
+        # Calculate optimal moves based on mode
+        if mode == '4peg':
+            optimal_moves = len(frame_stewart_algorithm(disk_count, 'A', 'B', 'C', 'D'))
+        else:
+            optimal_moves = (2 ** disk_count) - 1
+            
+        # Improved scoring formula - more forgiving for larger puzzles
+        # Base score of 1000, with penalty based on percentage above optimal
+        penalty_factor = min(100, 100 * (moves_count - optimal_moves) / optimal_moves) if optimal_moves > 0 else 100
+        score_amount = int(max(0, 1000 - (penalty_factor * 10)))
+        
         logger.info(f"Calculated score_amount: {score_amount} for {moves_count} moves (optimal: {optimal_moves})")
 
         score_id = toh_db.save_game_result(player_name, disk_count, moves_count, moves_json, mode, score_amount)
-        return jsonify({'success': True, 'message': 'Game result saved successfully', 'score_id': score_id, 'score_amount': score_amount})
+        return jsonify({
+            'success': True, 
+            'message': 'Game result saved successfully', 
+            'score_id': score_id, 
+            'score_amount': score_amount,
+            'optimal_moves': optimal_moves
+        })
     except Exception as e:
         logger.error(f"Error in save-game-result: {str(e)}\n{traceback.format_exc()}")
         return jsonify({'success': False, 'message': 'Server error occurred while saving game result'}), 500
@@ -322,6 +359,7 @@ def get_db_tables():
 def get_algorithm_comparison():
     try:
         performance_data = toh_db.get_algorithm_performance()
+        logger.debug(f"Algorithm comparison data: {[dict(perf) for perf in performance_data]}")
         return jsonify([dict(perf) for perf in performance_data])
     except Exception as e:
         logger.error(f"Error getting algorithm comparison: {str(e)}\n{traceback.format_exc()}")
@@ -331,6 +369,7 @@ def get_algorithm_comparison():
 def get_algorithm_comparison_chart():
     try:
         performance_data = toh_db.get_algorithm_comparison_chart_data()
+        logger.debug(f"Algorithm comparison chart data: {performance_data}")
         return jsonify(performance_data)
     except Exception as e:
         logger.error(f"Error getting chart data: {str(e)}\n{traceback.format_exc()}")

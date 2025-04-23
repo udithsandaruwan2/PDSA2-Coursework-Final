@@ -43,7 +43,6 @@ def init_db():
             ''')
             logger.info("Scores table created or already exists")
 
-            # Add score_amount column if it doesn't exist
             cursor.execute("PRAGMA table_info(scores)")
             columns = [col['name'] for col in cursor.fetchall()]
             if 'score_amount' not in columns:
@@ -115,6 +114,21 @@ def save_game_result(player_name, disk_count, moves_count, moves_json, mode="3pe
         logger.error(f"Error saving game result: {e}")
         raise
 
+def save_algorithm_performance(disk_count, algorithm_type, peg_count, avg_time):
+    """Save algorithm performance metrics"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'INSERT INTO algorithm_performance (disk_count, algorithm_type, peg_count, avg_time) VALUES (?, ?, ?, ?)',
+                (disk_count, algorithm_type, peg_count, avg_time)
+            )
+            conn.commit()
+            logger.debug(f"Saved algorithm performance: disk_count={disk_count}, type={algorithm_type}, time={avg_time:.6f} ms")
+    except sqlite3.Error as e:
+        logger.error(f"Error saving algorithm performance: {e}")
+        raise
+
 def get_scores(limit=20):
     """Get high scores, ordered by best moves count for each disk count"""
     try:
@@ -171,17 +185,14 @@ def get_all_table_data():
                 }
             }
 
-            # Fetch scores
             cursor.execute('SELECT * FROM scores')
             for row in cursor.fetchall():
                 tables['scores']['rows'].append([row['id'], row['player_name'], row['disk_count'], row['moves_count'], row['mode'], row['score_amount'], row['timestamp']])
 
-            # Fetch algorithm_performance
             cursor.execute('SELECT * FROM algorithm_performance')
             for row in cursor.fetchall():
                 tables['algorithm_performance']['rows'].append([row['id'], row['disk_count'], row['algorithm_type'], row['peg_count'], row['avg_time'], row['timestamp']])
 
-            # Fetch game_moves
             cursor.execute('SELECT * FROM game_moves')
             for row in cursor.fetchall():
                 tables['game_moves']['rows'].append([row['id'], row['score_id'], row['moves_json']])
@@ -191,22 +202,8 @@ def get_all_table_data():
         logger.error(f"Error getting all table data: {e}")
         raise
 
-def save_algorithm_performance(disk_count, algorithm_type, peg_count, avg_time):
-    """Save algorithm performance metrics"""
-    try:
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                'INSERT INTO algorithm_performance (disk_count, algorithm_type, peg_count, avg_time) VALUES (?, ?, ?, ?)',
-                (disk_count, algorithm_type, peg_count, avg_time)
-            )
-            conn.commit()
-    except sqlite3.Error as e:
-        logger.error(f"Error saving algorithm performance: {e}")
-        raise
-
 def get_algorithm_performance():
-    """Get average performance data for each algorithm and disk count"""
+    """Get latest performance data for each algorithm and disk count"""
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
@@ -215,9 +212,14 @@ def get_algorithm_performance():
                     disk_count, 
                     algorithm_type, 
                     peg_count, 
-                    AVG(avg_time) as avg_time
+                    avg_time,
+                    timestamp
                 FROM algorithm_performance
-                GROUP BY disk_count, algorithm_type, peg_count
+                WHERE (disk_count, algorithm_type, timestamp) IN (
+                    SELECT disk_count, algorithm_type, MAX(timestamp)
+                    FROM algorithm_performance
+                    GROUP BY disk_count, algorithm_type
+                )
                 ORDER BY disk_count, algorithm_type, peg_count
             ''')
             return cursor.fetchall()
@@ -234,9 +236,13 @@ def get_algorithm_comparison_chart_data():
                 SELECT 
                     disk_count, 
                     algorithm_type, 
-                    AVG(avg_time) * 1000 as avg_time_ms
+                    avg_time as avg_time_ms
                 FROM algorithm_performance
-                GROUP BY disk_count, algorithm_type
+                WHERE (disk_count, algorithm_type, timestamp) IN (
+                    SELECT disk_count, algorithm_type, MAX(timestamp)
+                    FROM algorithm_performance
+                    GROUP BY disk_count, algorithm_type
+                )
                 ORDER BY disk_count, algorithm_type
             ''')
             rows = cursor.fetchall()
