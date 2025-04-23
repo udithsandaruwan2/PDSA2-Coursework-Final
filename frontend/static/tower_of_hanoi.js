@@ -165,6 +165,10 @@ document.addEventListener('DOMContentLoaded', function() {
             minMovesEl.textContent = minMoves;
             yourMovesEl.textContent = yourMoves;
 
+            // Clear the manual submission form
+            document.getElementById('move-count').value = '';
+            document.getElementById('move-sequence').value = '';
+
             clearTowers();
             setupTowers();
             setupDragAndDrop();

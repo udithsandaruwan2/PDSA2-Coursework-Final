@@ -291,6 +291,109 @@ table th {
     animation: diskMove 0.5s ease;
 }
 
+/* New styles for manual-submit-modal */
+#manual-submit-modal .modal-content {
+    max-width: 700px;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    transform: scale(0.8);
+    transition: transform 0.3s ease;
+}
+
+#manual-submit-modal.show .modal-content {
+    transform: scale(1);
+}
+
+#manual-submit-modal h3 {
+    margin-top: 0;
+    font-size: 1.8em;
+    color: #333;
+}
+
+#manual-submit-modal .close {
+    color: #666;
+    transition: color 0.2s;
+}
+
+#manual-submit-modal .close:hover {
+    color: #000;
+}
+
+#manual-move-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-size: 1.1em;
+    color: #333;
+    font-weight: 600;
+}
+
+.form-group input,
+.form-group textarea {
+    padding: 12px;
+    font-size: 1em;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+}
+
+#move-count {
+    width: 150px;
+}
+
+#move-sequence {
+    width: 100%;
+    height: 400px;
+    resize: none;
+    font-family: 'Courier New', monospace;
+    line-height: 1.5;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.form-buttons button {
+    padding: 12px 24px;
+    font-size: 1em;
+    border-radius: 8px;
+}
+
+.form-buttons button[type="submit"] {
+    background-color: #3498db;
+}
+
+.form-buttons button[type="submit"]:hover {
+    background-color: #2980b9;
+}
+
+.form-buttons button#cancel-manual-submit {
+    background-color: #e74c3c;
+}
+
+.form-buttons button#cancel-manual-submit:hover {
+    background-color: #c0392b;
+}
+
 @media (max-width: 768px) {
     .tower {
         width: 30%;
@@ -307,5 +410,12 @@ table th {
     }
     .controls button {
         margin: 5px 0;
+    }
+    #manual-submit-modal .modal-content {
+        padding: 20px;
+        max-width: 90%;
+    }
+    #move-sequence {
+        height: 300px;
     }
 }

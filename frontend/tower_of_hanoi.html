@@ -198,16 +198,18 @@
                 <span class="close">×</span>
                 <h3>Manual Move Submission</h3>
                 <form id="manual-move-form">
-                    <div>
+                    <div class="form-group">
                         <label for="move-count">Number of Moves:</label>
-                        <input type="number" id="move-count" min="1" required>
+                        <input type="number" id="move-count" min="1" required placeholder="Enter number of moves">
                     </div>
-                    <div>
-                        <label for="move-sequence">Move Sequence (e.g., 1 A B, 2 A C):</label>
-                        <textarea id="move-sequence" rows="10" required placeholder="Enter each move on a new line: disk source dest (e.g., 1 A B)"></textarea>
+                    <div class="form-group">
+                        <label for="move-sequence">Move Sequence:</label>
+                        <textarea id="move-sequence" rows="15" required placeholder="Enter each move on a new line: disk source dest (e.g., 1 A B)"></textarea>
                     </div>
-                    <button type="submit">Submit Moves</button>
-                    <button type="button" id="cancel-manual-submit">Cancel</button>
+                    <div class="form-buttons">
+                        <button type="submit">Submit Moves</button>
+                        <button type="button" id="cancel-manual-submit">Cancel</button>
+                    </div>
                 </form>
             </div>
         </div>
