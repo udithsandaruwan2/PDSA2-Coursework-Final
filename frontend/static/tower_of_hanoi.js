@@ -27,6 +27,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const toggleMoveHistoryBtn = document.getElementById('toggle-move-history');
     const seeAllScoresBtn = document.getElementById('see-all-scores');
     const viewDbTablesBtn = document.getElementById('view-db-tables');
+    const manualSubmitBtn = document.getElementById('manual-submit');
+    const manualSubmitModal = document.getElementById('manual-submit-modal');
+    const manualMoveForm = document.getElementById('manual-move-form');
+    const cancelManualSubmitBtn = document.getElementById('cancel-manual-submit');
     const solutionModal = document.getElementById('solution-modal');
     const successModal = document.getElementById('success-modal');
     const allScoresModal = document.getElementById('all-scores-modal');
@@ -61,6 +65,9 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleMoveHistoryBtn.addEventListener('click', toggleMoveHistory);
         seeAllScoresBtn.addEventListener('click', showAllScores);
         viewDbTablesBtn.addEventListener('click', viewDatabaseTables);
+        manualSubmitBtn.addEventListener('click', () => showModal(manualSubmitModal));
+        cancelManualSubmitBtn.addEventListener('click', () => hideModal(manualSubmitModal));
+        manualMoveForm.addEventListener('submit', handleManualSubmit);
         playAgainBtn.addEventListener('click', () => {
             hideModal(successModal);
             startNewGame();
@@ -523,6 +530,86 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error saving score:', error);
             alert('Failed to save score. Please try again.');
+        }
+    }
+
+    async function handleManualSubmit(e) {
+        e.preventDefault();
+        const moveCount = parseInt(document.getElementById('move-count').value);
+        const sequenceText = document.getElementById('move-sequence').value.trim();
+        const moves = [];
+        const lines = sequenceText.split('\n').map(line => line.trim()).filter(line => line);
+        
+        if (lines.length !== moveCount) {
+            alert(`Number of moves (${moveCount}) does not match sequence count (${lines.length}).`);
+            return;
+        }
+        
+        for (const line of lines) {
+            const parts = line.split(/\s+/);
+            if (parts.length !== 3) {
+                alert(`Invalid move format: "${line}". Use: disk source dest (e.g., 1 A B)`);
+                return;
+            }
+            const disk = parseInt(parts[0]);
+            const source = parts[1].toUpperCase();
+            const dest = parts[2].toUpperCase();
+            if (isNaN(disk) || disk < 1 || disk > diskCount ||
+                !['A', 'B', 'C', 'D'].includes(source) || !['A', 'B', 'C', 'D'].includes(dest)) {
+                alert(`Invalid move: "${line}". Disk must be 1-${diskCount}, pegs must be A-D.`);
+                return;
+            }
+            if (gameMode === '3peg' && (source === 'D' || dest === 'D')) {
+                alert(`Invalid move: "${line}". Peg D is not allowed in 3-peg mode.`);
+                return;
+            }
+            moves.push([disk, source, dest]);
+        }
+        
+        try {
+            const response = await fetch('/api/toh/validate-solution', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    playerName: playerNameInput.value.trim() || 'Anonymous',
+                    diskCount,
+                    moves,
+                    mode: gameMode
+                })
+            });
+            const data = await response.json();
+            hideModal(manualSubmitModal);
+            if (data.success) {
+                yourMoves = moves.length;
+                yourMovesEl.textContent = yourMoves;
+                moveHistory = moves;
+                moveHistoryList.innerHTML = '';
+                moves.forEach((move, i) => {
+                    const [disk, source, dest] = move;
+                    const moveItem = document.createElement('div');
+                    moveItem.className = 'move-item';
+                    moveItem.textContent = `${i + 1}. Move disk ${disk} from ${source} to ${dest}`;
+                    moveHistoryList.appendChild(moveItem);
+                });
+                moveHistoryPanel.classList.remove('hidden');
+                const penalty_factor = Math.min(100, 100 * (yourMoves - minMoves) / minMoves);
+                const totalScore = Math.max(0, Math.floor(1000 - (penalty_factor * 10)));
+                document.getElementById('success-message').innerHTML = `
+                    <p>Congratulations! You solved it in ${yourMoves} moves (Minimum: ${minMoves}).</p>
+                    <p>${data.optimal ? 'Optimal solution!' : 'Try to match the minimum moves!'}</p>
+                    <p>Time: ${Math.floor(gameSeconds / 60)}:${(gameSeconds % 60).toString().padStart(2, '0')}</p>
+                    <p>Score: ${totalScore} points</p>
+                `;
+                showModal(successModal);
+                playerInputPanel.classList.remove('hidden');
+                gameInProgress = false;
+                stopGameTimer();
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            console.error('Error submitting manual moves:', error);
+            alert('Failed to submit moves. Please try again.');
         }
     }
 
