@@ -124,7 +124,8 @@ button.active {
     align-items: center;
     justify-content: flex-end;
     width: 25%;
-    height: 350px;
+    height: 400px;
+    background: linear-gradient(#f8fafc, #e2e8f0);
     position: relative;
     transition: background 0.3s;
 }
@@ -135,7 +136,7 @@ button.active {
 
 .peg {
     width: 14px;
-    height: 260px;
+    height: 310px;
     background: linear-gradient(#6b7280, #9ca3af);
     border-radius: 8px;
     position: absolute;
