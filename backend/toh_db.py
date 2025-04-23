@@ -1,7 +1,9 @@
+
 import sqlite3
 from contextlib import contextmanager
 import logging
 import os
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +58,22 @@ def init_db():
                     algorithm_type TEXT NOT NULL,
                     peg_count INTEGER NOT NULL,
                     avg_time REAL NOT NULL,
+                    min_moves INTEGER,  -- Column for minimum move count
+                    moves_json TEXT,    -- Column for move sequence
                     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
             logger.info("Algorithm_performance table created or already exists")
+
+            # Check and add new columns if they don't exist
+            cursor.execute("PRAGMA table_info(algorithm_performance)")
+            columns = [col['name'] for col in cursor.fetchall()]
+            if 'min_moves' not in columns:
+                cursor.execute('ALTER TABLE algorithm_performance ADD COLUMN min_moves INTEGER')
+                logger.info("Added min_moves column to algorithm_performance table")
+            if 'moves_json' not in columns:
+                cursor.execute('ALTER TABLE algorithm_performance ADD COLUMN moves_json TEXT')
+                logger.info("Added moves_json column to algorithm_performance table")
             
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS game_moves (
@@ -114,17 +128,18 @@ def save_game_result(player_name, disk_count, moves_count, moves_json, mode="3pe
         logger.error(f"Error saving game result: {e}")
         raise
 
-def save_algorithm_performance(disk_count, algorithm_type, peg_count, avg_time):
-    """Save algorithm performance metrics"""
+def save_algorithm_performance(disk_count, algorithm_type, peg_count, avg_time, min_moves=None, moves=None):
+    """Save algorithm performance metrics including minimum moves and move sequence"""
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
+            moves_json = json.dumps(moves) if moves is not None else None
             cursor.execute(
-                'INSERT INTO algorithm_performance (disk_count, algorithm_type, peg_count, avg_time) VALUES (?, ?, ?, ?)',
-                (disk_count, algorithm_type, peg_count, avg_time)
+                'INSERT INTO algorithm_performance (disk_count, algorithm_type, peg_count, avg_time, min_moves, moves_json) VALUES (?, ?, ?, ?, ?, ?)',
+                (disk_count, algorithm_type, peg_count, avg_time, min_moves, moves_json)
             )
             conn.commit()
-            logger.debug(f"Saved algorithm performance: disk_count={disk_count}, type={algorithm_type}, time={avg_time:.6f} ms")
+            logger.debug(f"Saved algorithm performance: disk_count={disk_count}, type={algorithm_type}, time={avg_time:.6f} ms, min_moves={min_moves}, moves={moves_json}")
     except sqlite3.Error as e:
         logger.error(f"Error saving algorithm performance: {e}")
         raise
@@ -176,7 +191,7 @@ def get_all_table_data():
                     'rows': []
                 },
                 'algorithm_performance': {
-                    'columns': ['id', 'disk_count', 'algorithm_type', 'peg_count', 'avg_time', 'timestamp'],
+                    'columns': ['id', 'disk_count', 'algorithm_type', 'peg_count', 'avg_time', 'min_moves', 'moves_json', 'timestamp'],
                     'rows': []
                 },
                 'game_moves': {
@@ -191,7 +206,7 @@ def get_all_table_data():
 
             cursor.execute('SELECT * FROM algorithm_performance')
             for row in cursor.fetchall():
-                tables['algorithm_performance']['rows'].append([row['id'], row['disk_count'], row['algorithm_type'], row['peg_count'], row['avg_time'], row['timestamp']])
+                tables['algorithm_performance']['rows'].append([row['id'], row['disk_count'], row['algorithm_type'], row['peg_count'], row['avg_time'], row['min_moves'], row['moves_json'], row['timestamp']])
 
             cursor.execute('SELECT * FROM game_moves')
             for row in cursor.fetchall():
@@ -213,6 +228,8 @@ def get_algorithm_performance():
                     algorithm_type, 
                     peg_count, 
                     avg_time,
+                    min_moves,
+                    moves_json,
                     timestamp
                 FROM algorithm_performance
                 WHERE (disk_count, algorithm_type, timestamp) IN (
