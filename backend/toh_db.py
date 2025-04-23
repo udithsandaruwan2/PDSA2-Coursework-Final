@@ -1,4 +1,3 @@
-
 import sqlite3
 from contextlib import contextmanager
 import logging
@@ -58,14 +57,13 @@ def init_db():
                     algorithm_type TEXT NOT NULL,
                     peg_count INTEGER NOT NULL,
                     avg_time REAL NOT NULL,
-                    min_moves INTEGER,  -- Column for minimum move count
-                    moves_json TEXT,    -- Column for move sequence
+                    min_moves INTEGER,
+                    moves_json TEXT,
                     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
             logger.info("Algorithm_performance table created or already exists")
 
-            # Check and add new columns if they don't exist
             cursor.execute("PRAGMA table_info(algorithm_performance)")
             columns = [col['name'] for col in cursor.fetchall()]
             if 'min_moves' not in columns:
@@ -139,7 +137,7 @@ def save_algorithm_performance(disk_count, algorithm_type, peg_count, avg_time, 
                 (disk_count, algorithm_type, peg_count, avg_time, min_moves, moves_json)
             )
             conn.commit()
-            logger.debug(f"Saved algorithm performance: disk_count={disk_count}, type={algorithm_type}, time={avg_time:.6f} ms, min_moves={min_moves}, moves={moves_json}")
+            logger.debug(f"Saved algorithm performance: disk_count={disk_count}, type={algorithm_type}, time={avg_time:.6f} ms, min_moves={min_moves}")
     except sqlite3.Error as e:
         logger.error(f"Error saving algorithm performance: {e}")
         raise
@@ -244,8 +242,8 @@ def get_algorithm_performance():
         logger.error(f"Error getting algorithm performance: {e}")
         raise
 
-def get_algorithm_comparison_chart_data():
-    """Get data formatted for charting algorithm performance"""
+def get_last_10_rounds_performance():
+    """Get the last 30 performance records from algorithm_performance (10 rounds × 3 algorithms)"""
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
@@ -253,22 +251,49 @@ def get_algorithm_comparison_chart_data():
                 SELECT 
                     disk_count, 
                     algorithm_type, 
-                    avg_time as avg_time_ms
+                    peg_count, 
+                    avg_time, 
+                    min_moves, 
+                    timestamp
                 FROM algorithm_performance
-                WHERE (disk_count, algorithm_type, timestamp) IN (
-                    SELECT disk_count, algorithm_type, MAX(timestamp)
-                    FROM algorithm_performance
-                    GROUP BY disk_count, algorithm_type
-                )
-                ORDER BY disk_count, algorithm_type
+                ORDER BY timestamp DESC, algorithm_type
+                LIMIT 30
+            ''')
+            return cursor.fetchall()
+    except sqlite3.Error as e:
+        logger.error(f"Error getting last 10 rounds performance: {e}")
+        raise
+
+def get_rounds_comparison_chart_data():
+    """Get data formatted for charting the last 10 rounds (30 records)"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT 
+                    disk_count, 
+                    algorithm_type, 
+                    avg_time,
+                    timestamp
+                FROM algorithm_performance
+                ORDER BY timestamp DESC, algorithm_type
+                LIMIT 30
             ''')
             rows = cursor.fetchall()
             
-            disk_counts = sorted(set(row['disk_count'] for row in rows))
-            algorithms = sorted(set(row['algorithm_type'] for row in rows))
+            # Group records into rounds (3 records per round)
+            rounds = []
+            for i in range(0, len(rows), 3):
+                if i + 2 < len(rows):  # Ensure we have a complete round
+                    rounds.append(rows[i:i+3])
             
+            # Reverse rounds to have oldest first for chart
+            rounds.reverse()
+            
+            # Prepare chart data
+            algorithms = ['recursive', 'iterative', 'frame_stewart']
             result = {
-                'labels': disk_counts,
+                'labels': [f'Round {i+1}' for i in range(min(10, len(rounds)))],
                 'datasets': []
             }
             
@@ -285,14 +310,19 @@ def get_algorithm_comparison_chart_data():
                     'data': []
                 }
                 
-                for disk in disk_counts:
-                    time_value = next((row['avg_time_ms'] for row in rows 
-                                     if row['disk_count'] == disk and row['algorithm_type'] == algorithm), 0)
+                # Fill data for up to 10 rounds
+                for round_idx in range(10):
+                    if round_idx < len(rounds):
+                        round_records = rounds[round_idx]
+                        time_value = next((record['avg_time'] for record in round_records 
+                                         if record['algorithm_type'] == algorithm), 0)
+                    else:
+                        time_value = 0
                     dataset['data'].append(time_value)
                 
                 result['datasets'].append(dataset)
             
             return result
     except sqlite3.Error as e:
-        logger.error(f"Error getting chart data: {e}")
+        logger.error(f"Error getting rounds chart data: {e}")
         raise

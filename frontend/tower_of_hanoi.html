@@ -97,6 +97,7 @@
                 <button class="tab active" data-tab="instructions">Instructions</button>
                 <button class="tab" data-tab="scores">High Scores</button>
                 <button class="tab" data-tab="algorithms">Algorithm Comparison</button>
+                <button class="tab" data-tab="rounds-comparison">10 Rounds Comparison</button>
             </div>
             <div class="tab-content active" id="instructions-content">
                 <h3>How to Play</h3>
@@ -121,6 +122,22 @@
                 <table id="algorithm-table">
                     <thead><tr><th>Disks</th><th>Algorithm</th><th>Pegs</th><th>Avg. Time (ms)</th></tr></thead>
                     <tbody id="algorithm-body"></tbody>
+                </table>
+            </div>
+            <div class="tab-content" id="rounds-comparison-content">
+                <h3>10 Rounds Algorithm Performance</h3>
+                <canvas id="rounds-comparison-chart" style="max-height: 400px;"></canvas>
+                <table id="rounds-comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Disks</th>
+                            <th>Minimum Moves</th>
+                            <th>Average Time (ms)</th>
+                            <th>Mode</th>
+                            <th>Algorithm</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rounds-comparison-body"></tbody>
                 </table>
             </div>
         </div>

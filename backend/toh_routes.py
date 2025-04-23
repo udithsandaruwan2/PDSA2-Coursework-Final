@@ -28,38 +28,30 @@ def solve_toh_iterative(n, source, auxiliary, destination):
     if n <= 0:
         return moves
     
-    # Initialize the towers
     towers = {'A': list(range(n, 0, -1)), 'B': [], 'C': []}
     peg_names = {source: 'A', auxiliary: 'B', destination: 'C'}
     
-    # Choose the correct move pattern based on whether n is even or odd
-    if n % 2 == 0:  # Even number of disks
+    if n % 2 == 0:
         move_order = [(source, auxiliary), (source, destination), (auxiliary, destination)]
-    else:  # Odd number of disks
+    else:
         move_order = [(source, destination), (source, auxiliary), (auxiliary, destination)]
     
-    # Total number of moves required
     total_moves = (2 ** n) - 1
     
     for i in range(1, total_moves + 1):
-        # Get the source and destination for this move based on the pattern
         src, dst = move_order[(i - 1) % 3]
         
-        # Perform the smallest legal move between the source and destination
         src_tower = towers[peg_names[src]]
         dst_tower = towers[peg_names[dst]]
         
-        # If source is empty, move from destination to source
         if not src_tower:
             disk = dst_tower.pop()
             src_tower.append(disk)
             moves.append([disk, peg_names[dst], peg_names[src]])
-        # If destination is empty, move from source to destination
         elif not dst_tower:
             disk = src_tower.pop()
             dst_tower.append(disk)
             moves.append([disk, peg_names[src], peg_names[dst]])
-        # Move the smaller disk
         elif src_tower[-1] < dst_tower[-1]:
             disk = src_tower.pop()
             dst_tower.append(disk)
@@ -70,8 +62,6 @@ def solve_toh_iterative(n, source, auxiliary, destination):
             moves.append([disk, peg_names[dst], peg_names[src]])
     
     return moves
-
-
 
 def frame_stewart_algorithm(n, source, aux1, aux2, destination):
     moves = []
@@ -112,31 +102,21 @@ def new_game():
 
         logger.info(f"Starting new game with {disk_count} disks, mode: {mode}")
 
-        # Number of iterations to ensure measurable time
-        iterations = 1000
-
-        # Measure recursive algorithm
         start_time = time.perf_counter()
-        for _ in range(iterations):
-            recursive_solution = solve_toh_recursive(disk_count, 'A', 'B', 'C')
-        recursive_time = (time.perf_counter() - start_time) / iterations * 1000  # Convert to milliseconds
+        recursive_solution = solve_toh_recursive(disk_count, 'A', 'B', 'C')
+        recursive_time = (time.perf_counter() - start_time) * 1000
         logger.debug(f"Recursive time: {recursive_time:.6f} ms")
 
-        # Measure iterative algorithm
         start_time = time.perf_counter()
-        for _ in range(iterations):
-            iterative_solution = solve_toh_iterative(disk_count, 'A', 'B', 'C')
-        iterative_time = (time.perf_counter() - start_time) / iterations * 1000  # Convert to milliseconds
+        iterative_solution = solve_toh_iterative(disk_count, 'A', 'B', 'C')
+        iterative_time = (time.perf_counter() - start_time) * 1000
         logger.debug(f"Iterative time: {iterative_time:.6f} ms")
 
-        # Measure Frame-Stewart algorithm
         start_time = time.perf_counter()
-        for _ in range(iterations):
-            frame_stewart_solution = frame_stewart_algorithm(disk_count, 'A', 'B', 'C', 'D')
-        frame_stewart_time = (time.perf_counter() - start_time) / iterations * 1000  # Convert to milliseconds
+        frame_stewart_solution = frame_stewart_algorithm(disk_count, 'A', 'B', 'C', 'D')
+        frame_stewart_time = (time.perf_counter() - start_time) * 1000
         logger.debug(f"Frame-Stewart time: {frame_stewart_time:.6f} ms")
 
-        # Save performance with min_moves and moves
         toh_db.save_algorithm_performance(
             disk_count, 'recursive', 3, recursive_time, len(recursive_solution), recursive_solution
         )
@@ -191,7 +171,6 @@ def validate_solution():
 
         valid_solution = validate_move_sequence(disk_count, moves)
         if valid_solution:
-            # Calculate optimal moves based on mode
             if mode == '4peg':
                 optimal_moves = len(frame_stewart_algorithm(disk_count, 'A', 'B', 'C', 'D'))
             else:
@@ -199,7 +178,6 @@ def validate_solution():
                 
             is_optimal = len(moves) == optimal_moves
             
-            # Improved scoring formula - more forgiving for larger puzzles
             penalty_factor = min(100, 100 * (len(moves) - optimal_moves) / optimal_moves) if optimal_moves > 0 else 100
             score_amount = int(max(0, 1000 - (penalty_factor * 10)))
 
@@ -248,14 +226,11 @@ def save_game_result():
         if not valid_solution:
             return jsonify({'success': False, 'message': 'Invalid move sequence'}), 400
 
-        # Calculate optimal moves based on mode
         if mode == '4peg':
             optimal_moves = len(frame_stewart_algorithm(disk_count, 'A', 'B', 'C', 'D'))
         else:
             optimal_moves = (2 ** disk_count) - 1
             
-        # Improved scoring formula - more forgiving for larger puzzles
-        # Base score of 1000, with penalty based on percentage above optimal
         penalty_factor = min(100, 100 * (moves_count - optimal_moves) / optimal_moves) if optimal_moves > 0 else 100
         score_amount = int(max(0, 1000 - (penalty_factor * 10)))
         
@@ -375,9 +350,57 @@ def get_algorithm_comparison():
 @bp.route('/algorithm-comparison-chart', methods=['GET'])
 def get_algorithm_comparison_chart():
     try:
-        performance_data = toh_db.get_algorithm_comparison_chart_data()
-        logger.debug(f"Algorithm comparison chart data: {performance_data}")
-        return jsonify(performance_data)
+        performance_data = toh_db.get_algorithm_performance()
+        algorithms = sorted(set(perf['algorithm_type'] for perf in performance_data))
+        disk_counts = sorted(set(perf['disk_count'] for perf in performance_data))
+        
+        result = {
+            'labels': disk_counts,
+            'datasets': []
+        }
+        
+        colors = {
+            'recursive': 'rgba(255, 99, 132, 0.8)',
+            'iterative': 'rgba(54, 162, 235, 0.8)',
+            'frame_stewart': 'rgba(75, 192, 192, 0.8)'
+        }
+        
+        for algorithm in algorithms:
+            dataset = {
+                'label': algorithm.capitalize(),
+                'backgroundColor': colors.get(algorithm, 'rgba(0, 0, 0, 0.8)'),
+                'data': []
+            }
+            
+            for disk_count in disk_counts:
+                time_value = next((perf['avg_time'] for perf in performance_data 
+                                 if perf['algorithm_type'] == algorithm and perf['disk_count'] == disk_count), 0)
+                dataset['data'].append(time_value)
+            
+            result['datasets'].append(dataset)
+        
+        logger.debug(f"Algorithm comparison chart data: {result}")
+        return jsonify(result)
     except Exception as e:
         logger.error(f"Error getting chart data: {str(e)}\n{traceback.format_exc()}")
         return jsonify({'error': 'Server error occurred while fetching chart data'}), 500
+
+@bp.route('/rounds-comparison', methods=['GET'])
+def get_rounds_comparison():
+    try:
+        performance_data = toh_db.get_last_10_rounds_performance()
+        logger.debug(f"Rounds comparison data: {[dict(perf) for perf in performance_data]}")
+        return jsonify([dict(perf) for perf in performance_data])
+    except Exception as e:
+        logger.error(f"Error getting rounds comparison: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': 'Server error occurred while fetching rounds data'}), 500
+
+@bp.route('/rounds-comparison-chart', methods=['GET'])
+def get_rounds_comparison_chart():
+    try:
+        chart_data = toh_db.get_rounds_comparison_chart_data()
+        logger.debug(f"Rounds comparison chart data: {chart_data}")
+        return jsonify(chart_data)
+    except Exception as e:
+        logger.error(f"Error getting rounds chart data: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': 'Server error occurred while fetching rounds chart data'}), 500

@@ -11,7 +11,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let gameTimer = null;
     let gameSeconds = 0;
     let gameStartTime = null;
-    let algorithmChart = null; // Chart instance
+    let algorithmChart = null;
+    let roundsComparisonChart = null;
 
     const mode3PegBtn = document.getElementById('mode-3peg');
     const mode4PegBtn = document.getElementById('mode-4peg');
@@ -116,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // For local testing without API
             const mockResponse = {
                 disk_count: diskCount,
-                min_moves: (2 ** diskCount) - 1,  // Default 3-peg minimum moves
+                min_moves: (2 ** diskCount) - 1,
                 solutions: {
                     recursive: { moves: [], time: 0.001 },
                     iterative: { moves: [], time: 0.002 },
@@ -124,7 +125,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             };
             
-            // Try to fetch from API, use mock if it fails
             let data;
             try {
                 const response = await fetch(`/api/toh/new-game?disks=${diskCount}&mode=${gameMode}`);
@@ -142,11 +142,10 @@ document.addEventListener('DOMContentLoaded', function() {
             diskCount = data.disk_count;
             solutions = data.solutions || {};
             
-            // Use the Frame-Stewart algorithm's move count as minMoves when in 4-peg mode
             if (gameMode === '4peg' && solutions.frame_stewart && solutions.frame_stewart.moves) {
                 minMoves = solutions.frame_stewart.moves.length;
             } else {
-                minMoves = data.min_moves;  // Default to API-provided min_moves (typically 3-peg)
+                minMoves = data.min_moves;
             }
             
             yourMoves = 0;
@@ -326,7 +325,6 @@ document.addEventListener('DOMContentLoaded', function() {
             gameInProgress = false;
             stopGameTimer();
 
-            // Replace the current score calculation with:
             const penalty_factor = Math.min(100, 100 * (yourMoves - minMoves) / minMoves);
             const totalScore = Math.max(0, Math.floor(1000 - (penalty_factor * 10)));
             document.getElementById('success-message').innerHTML = `
@@ -337,7 +335,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             showModal(successModal);
             playerInputPanel.classList.remove('hidden');
-            // Automatically submit the solution
             handleSubmitSolution(totalScore);
         }
     }
@@ -368,10 +365,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // Log raw time to verify
             console.log(`Raw time for ${id}: ${time} ms`);
 
-            // Display time directly in milliseconds with 'ms' unit
             timeEl.textContent = time.toFixed(6) + ' ms';
 
             movesEl.innerHTML = '';
@@ -431,13 +426,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         try {
-            const moves = moveHistory; // Use moveHistory directly
+            const moves = moveHistory;
             if (moves.length === 0) {
                 alert('No moves recorded.');
                 return;
             }
 
-            // Validate move format
             const invalidMove = moves.find(move => 
                 !Array.isArray(move) || 
                 move.length !== 3 || 
@@ -454,7 +448,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    playerName: 'Anonymous', // Will be updated in saveScore
+                    playerName: 'Anonymous',
                     diskCount, 
                     moves,
                     mode: gameMode
@@ -474,7 +468,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     moveHistoryList.appendChild(moveItem);
                 });
 
-                // Update success message with comparison to minimum moves
                 const isOptimal = yourMoves === minMoves;
                 document.getElementById('success-message').innerHTML = `
                     <p>Congratulations! You solved it in ${yourMoves} moves (Minimum: ${minMoves}).</p>
@@ -559,7 +552,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch('/api/toh/algorithm-comparison');
             const data = await response.json();
             
-            // Log raw data to verify
             console.log('Algorithm comparison data:', data);
 
             const algorithmBody = document.getElementById('algorithm-body');
@@ -580,12 +572,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 algorithmBody.appendChild(row);
             });
 
-            // Render chart
             const chartData = await fetch('/api/toh/algorithm-comparison-chart').then(res => res.json());
             console.log('Algorithm chart data:', chartData);
             renderAlgorithmChart(chartData);
         } catch (error) {
             console.error('Error loading algorithm comparison:', error);
+        }
+    }
+
+    async function loadRoundsComparison() {
+        try {
+            const response = await fetch('/api/toh/rounds-comparison');
+            const data = await response.json();
+            
+            console.log('Rounds comparison data:', data);
+
+            const roundsBody = document.getElementById('rounds-comparison-body');
+            roundsBody.innerHTML = '';
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                const algorithmName = {
+                    'recursive': 'Recursive',
+                    'iterative': 'Iterative',
+                    'frame_stewart': 'Frame-Stewart'
+                }[item.algorithm_type] || 'Unknown';
+                const mode = item.peg_count === 4 ? '4peg' : '3peg';
+                row.innerHTML = `
+                    <td>${item.disk_count}</td>
+                    <td>${item.min_moves}</td>
+                    <td>${item.avg_time.toFixed(6)} ms</td>
+                    <td>${mode}</td>
+                    <td>${algorithmName}</td>
+                `;
+                roundsBody.appendChild(row);
+            });
+
+            const chartData = await fetch('/api/toh/rounds-comparison-chart').then(res => res.json());
+            console.log('Rounds comparison chart data:', chartData);
+            renderRoundsComparisonChart(chartData);
+        } catch (error) {
+            console.error('Error loading rounds comparison:', error);
         }
     }
 
@@ -622,11 +648,45 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function renderRoundsComparisonChart(chartData) {
+        const ctx = document.getElementById('rounds-comparison-chart').getContext('2d');
+        if (roundsComparisonChart) {
+            roundsComparisonChart.destroy();
+        }
+        roundsComparisonChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: chartData.datasets.map(dataset => ({
+                    ...dataset,
+                    borderColor: dataset.backgroundColor,
+                    fill: false,
+                    tension: 0.1
+                }))
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top' },
+                    title: { display: true, text: '10 Rounds Algorithm Performance (ms)' }
+                },
+                scales: {
+                    x: { title: { display: true, text: 'Round' } },
+                    y: { 
+                        title: { display: true, text: 'Execution Time (ms)' },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
     function switchTab(tabId) {
         tabs.forEach(tab => tab.classList.toggle('active', tab.getAttribute('data-tab') === tabId));
         tabContents.forEach(content => content.classList.toggle('active', content.id === `${tabId}-content`));
         if (tabId === 'scores') loadScores();
         else if (tabId === 'algorithms') loadAlgorithmComparison();
+        else if (tabId === 'rounds-comparison') loadRoundsComparison();
     }
 
     function switchSolutionTab(solutionId) {
