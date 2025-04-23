@@ -377,44 +377,6 @@ def get_db_tables():
                     transition: background 0.2s ease;
                 }
 
-                nav {
-                    position: sticky;
-                    top: 0;
-                    background: rgba(255, 255, 255, 0.95);
-                    backdrop-filter: blur(8px);
-                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-                    padding: 10px 20px;
-                    z-index: 1000;
-                    margin-bottom: 20px;
-                    border-radius: 8px;
-                }
-
-                .nav-list {
-                    display: flex;
-                    flex-wrap: wrap;
-                    justify-content: center;
-                    gap: 10px;
-                    list-style: none;
-                }
-
-                .nav-item a {
-                    display: inline-block;
-                    padding: 8px 16px;
-                    background: linear-gradient(45deg, #3b82f6, #60a5fa);
-                    color: #fff;
-                    text-decoration: none;
-                    border-radius: 6px;
-                    font-weight: 500;
-                    font-size: 0.9rem;
-                    transition: transform 0.2s, box-shadow 0.2s, background 0.3s;
-                }
-
-                .nav-item a:hover {
-                    background: linear-gradient(45deg, #2563eb, #3b82f6);
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-                }
-
                 @media (max-width: 768px) {
                     body {
                         padding: 10px;
@@ -442,17 +404,6 @@ def get_db_tables():
                         padding: 10px;
                         font-size: 0.9rem;
                     }
-
-                    .nav-list {
-                        flex-direction: column;
-                        align-items: center;
-                    }
-
-                    .nav-item a {
-                        width: 100%;
-                        text-align: center;
-                        padding: 10px;
-                    }
                 }
 
                 @media (max-width: 480px) {
@@ -468,24 +419,13 @@ def get_db_tables():
                         padding: 8px;
                         font-size: 0.85rem;
                     }
-
-                    .nav-item a {
-                        font-size: 0.8rem;
-                    }
                 }
             </style>
         </head>
         <body>
             <h1>Database Tables</h1>
-            <nav>
-                <ul class="nav-list">
-                    {% for table_name, data in tables.items() %}
-                        <li class="nav-item"><a href="#{{ table_name }}">{{ table_name }}</a></li>
-                    {% endfor %}
-                </ul>
-            </nav>
             {% for table_name, data in tables.items() %}
-                <h2 id="{{ table_name }}">{{ table_name }}</h2>
+                <h2>{{ table_name }}</h2>
                 <div class="table-container">
                     <table>
                         <thead>
