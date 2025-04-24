@@ -118,6 +118,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function startNewGame() {
         try {
+            playerInputPanel.classList.add('hidden');
             const selectedDisks = diskSelector.value;
             diskCount = selectedDisks === 'random' ? Math.floor(Math.random() * 6) + 5 : parseInt(selectedDisks);
             
