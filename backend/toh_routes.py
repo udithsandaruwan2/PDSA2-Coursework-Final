@@ -5,6 +5,8 @@ import time
 import json
 import logging
 import traceback
+import math
+import copy
 
 logger = logging.getLogger(__name__)
 
@@ -76,18 +78,70 @@ def frame_stewart_algorithm(n, source, aux1, aux2, destination):
         moves.append([1, aux1, destination])
         return moves
 
-    k_lookup = {
-        1: 1, 2: 1, 3: 1, 4: 2, 5: 2,
-        6: 3, 7: 4, 8: 4, 9: 5, 10: 5
+    def is_valid_move(disk, src, dst, towers):
+        """Check if moving disk from src to dst is valid."""
+        if src not in towers or dst not in towers:
+            return False
+        if not towers[src] or towers[src][-1] != disk:
+            return False
+        if towers[dst] and towers[dst][-1] < disk:
+            return False
+        return True
+
+    def add_move(disk, src, dst, towers, moves_list):
+        """Add a move if valid and update tower state."""
+        if is_valid_move(disk, src, dst, towers):
+            towers[src].pop()
+            towers[dst].append(disk)
+            moves_list.append([disk, src, dst])
+            return True
+        logger.error(f"Invalid move: {disk} from {src} to {dst}")
+        return False
+
+    def solve_4peg(n, src, a1, a2, dst, base_disk, towers, moves_list):
+        """Recursive 4-peg solver with base_disk tracking."""
+        if n <= 0:
+            return
+        if n == 1:
+            add_move(base_disk, src, dst, towers, moves_list)
+            return
+        if n == 2:
+            add_move(base_disk, src, a1, towers, moves_list)
+            add_move(base_disk + 1, src, dst, towers, moves_list)
+            add_move(base_disk, a1, dst, towers, moves_list)
+            return
+
+        # Choose k: number of disks to move to a1 in first step
+        k_overrides = {3: 1, 4: 2, 5: 2, 6: 3, 7: 3, 8: 4, 9: 5, 10: 5}
+        k = k_overrides.get(n, max(1, n - int(math.ceil(math.sqrt(n)))))
+        if k >= n:
+            k = n - 1
+
+        # Stage 1: Move k disks from src to a1 using all four pegs
+        solve_4peg(k, src, a2, dst, a1, base_disk, towers, moves_list)
+
+        # Stage 2: Move n-k disks from src to dst using 3 pegs (a2 as auxiliary)
+        sub_moves = solve_toh_recursive(n - k, src, a2, dst)
+        for disk, s, d in sub_moves:
+            actual_disk = base_disk + k + disk - 1  # Adjust disk number
+            if not add_move(actual_disk, s, d, towers, moves_list):
+                logger.error(f"Failed to add move: {actual_disk} from {s} to {d}")
+
+        # Stage 3: Move k disks from a1 to dst using all four pegs
+        solve_4peg(k, a1, src, a2, dst, base_disk, towers, moves_list)
+
+    # Initialize tower state
+    towers = {
+        source: list(range(n, 0, -1)),
+        aux1: [],
+        aux2: [],
+        destination: []
     }
-    k = k_lookup.get(n, n // 2)
 
-    moves.extend(frame_stewart_algorithm(k, source, aux2, destination, aux1))
-    sub_moves = solve_toh_recursive(n - k, source, aux2, destination)
-    for disk, src, dst in sub_moves:
-        moves.append([disk + k, src, dst])
-    moves.extend(frame_stewart_algorithm(k, aux1, source, aux2, destination))
+    # Execute the 4-peg solver with base_disk=1
+    solve_4peg(n, source, aux1, aux2, destination, 1, towers, moves)
 
+    # Map pegs to standard names (A, B, C, D)
     peg_names = {source: 'A', aux1: 'B', aux2: 'C', destination: 'D'}
     return [[disk, peg_names[src], peg_names[dst]] for disk, src, dst in moves]
 
@@ -128,6 +182,7 @@ def new_game():
         )
 
         min_moves = len(frame_stewart_solution) if mode == '4peg' else (2 ** disk_count) - 1
+        logger.info(f"Computed min_moves for disk_count={disk_count}, mode={mode}: {min_moves}")
 
         return jsonify({
             'disk_count': disk_count,
@@ -392,7 +447,7 @@ def get_db_tables():
                 .nav-list {
                     display: flex;
                     flex-wrap: wrap;
-                    justify-content: center;
+                    justify: center;
                     gap: 10px;
                     list-style: none;
                 }
