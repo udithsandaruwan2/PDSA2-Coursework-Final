@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Compare Algorithms - Knight's Tour</title>
+  <link rel="stylesheet" href="Knight.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 1000px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    canvas {
+      margin: auto;
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <canvas id="comparisonChart">Your browser does not support canvas.</canvas>
+    <button onclick="window.location.href='../knight_problem.html'" style="margin-top: 20px;">⬅ Back to Game</button>
+  </div>
+
+  <script>
+    fetch('http://127.0.0.1:5000/knight/get_performance')
+      .then(response => response.json())
+      .then(data => {
+        console.log("Fetched Performance Data:", data);  // ✅ Debug log
+
+        if (data.success && data.metrics.length > 0) {
+          const last10 = data.metrics.slice(-10); // Last 10 entries
+
+          const labels = last10.map((_, index) => `Round ${index + 1}`);
+          const backtrackingTimes = last10.map(metric => metric.backtracking_algorithm || 0.1);
+          const warnsdorffTimes = last10.map(metric => metric.warnsdorff_algorithm || 0.1);  // ✅ Fixed typo
+
+          const ctx = document.getElementById('comparisonChart').getContext('2d');
+
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  label: 'Backtracking (ms)',
+                  data: backtrackingTimes,
+                  borderColor: 'rgba(255, 99, 132, 1)',
+                  backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                  tension: 0.3,
+                  fill: true
+                },
+                {
+                  label: "Warnsdorff's Rule (ms)",
+                  data: warnsdorffTimes,
+                  borderColor: 'rgba(54, 162, 235, 1)',
+                  backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                  tension: 0.3,
+                  fill: true
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: {
+                  position: 'top',
+                },
+                title: {
+                  display: true,
+                  text: 'Algorithm Execution Time Over Last 10 Rounds'
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  min: 0,
+                  title: {
+                    display: true,
+                    text: 'Time (ms)'
+                  }
+                }
+              }
+            }
+          });
+
+        } else {
+          alert('No performance metrics available.');
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching performance metrics:', error);
+      });
+  </script>
+</body>
+</html>

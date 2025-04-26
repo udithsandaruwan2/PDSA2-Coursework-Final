@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Performance Metrics - Knight's Tour</title>
+  <link rel="stylesheet" href="../Knightsprob/Knight.css">
+</head>
+<body>
+  <div class="container">
+    <h2>📊 Performance Metrics</h2>
+    <table border="1" cellpadding="8" style="margin-top: 20px; width: 100%;" id="performance-table">
+      <thead>
+        <tr>
+          <th>Backtracking Time (ms)</th>
+          <th>Warnsdorff Time (ms)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <button onclick="window.location.href='../knight_problem.html'" style="margin-top: 20px;">⬅ Back to Game</button>
+  </div>
+
+  <script>
+    fetch('http://127.0.0.1:5000/knight/get_performance')
+      .then(response => response.json())
+      .then(data => {
+        const tableBody = document.querySelector('#performance-table tbody');
+        tableBody.innerHTML = '';
+  
+        if (data.success && data.metrics.length > 0) {
+          data.metrics.forEach(metric => {
+            const row = document.createElement('tr');
+  
+            const backtrackingCell = document.createElement('td');
+            backtrackingCell.textContent = metric.backtracking_algorithm;
+  
+            const warnsdoffsCell = document.createElement('td');
+            warnsdoffsCell.textContent = metric.warnsdoffs_algorithm;
+  
+ 
+  
+            row.appendChild(backtrackingCell);
+            row.appendChild(warnsdoffsCell);
+  
+            tableBody.appendChild(row);
+          });
+        } else {
+          const row = document.createElement('tr');
+          const cell = document.createElement('td');
+          cell.colSpan = 3;
+          cell.textContent = 'No performance metrics found.';
+          row.appendChild(cell);
+          tableBody.appendChild(row);
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching performance metrics:', error);
+      });
+  </script>
+  

@@ -1,14 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Knight's tour Problem</title>
-    <!-- <link rel="stylesheet" href="styles.css"> -->
+  <meta charset="UTF-8" />
+  <title>Knight's Tour Game</title>
+  <link rel="stylesheet" href="../Knightsprob/Knight.css" />
 </head>
 <body>
-    <h1>Knight's tour Problem Game</h1>
-    <script src="script.js"></script>
+  <div class="container">
+    <div class="content">
+      <h1>Knight's Tour Problem</h1>
+
+      <!-- 🔘 Algorithm Selection -->
+      <div style="margin-bottom: 10px;">
+        <strong>Select Algorithm:</strong><br />
+        <label>
+          <input type="radio" name="algo" value="backtracking" checked />
+          Backtracking
+        </label>
+        <label style="margin-left: 15px;">
+          <input type="radio" name="algo" value="warnsdorff" />
+          Warnsdorff’s Rule
+        </label>
+        <label style="margin-left: 15px;">
+          <input type="radio" name="algo" value="using_both" />
+          Validate Using Both
+        </label>
+      </div>
+
+      <div id="main-container">
+        <!-- 🔘 Start and Restart buttons -->
+        <div class="button-group">
+          <button id="start-button" onclick="startGame()">Start Game</button>
+          <button onclick="window.open('./KnightsProb/winners.html', '_blank')">View Winners</button>
+          <button onclick="window.open('./KnightsProb/performance.html', '_blank')">View Performance</button>
+          <button onclick="window.open('./KnightsProb/compare.html', '_blank')">Compare Last 10 Rounds</button>
+        </div>
+      
+        <!-- Main Board -->
+        <div id="board" class="chessboard"></div>
+      
+        <!-- Warnsdorff Board (Hidden by default) -->
+        <div id="warnsdorff-container" style="text-align: center; display: none;">
+          <h3>Warnsdorff's Rule Visualization</h3>
+          <div id="warnsdorff-board" class="chessboard"></div>
+        </div>
+      </div>
+      
+      <p id="status"></p>
+      <p id="path"></p>
+      <p id="warnsdoffs_path"></p>
+
+      <!-- 👇 Winner form, hidden by default -->
+      <div id="winner-form" style="display: none; margin-top: 10px;">
+        <input type="text" id="username" placeholder="Enter your username" />
+        <button onclick="submitWinner()">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../Knightsprob/Knight.js"></script>
+  <script>
+    function restartGame() {
+      location.reload(); // simple page reload for reset
+    }
+  </script>
 </body>
 </html>
-
