@@ -3,12 +3,217 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tower Of Hanoi</title>
-    <!-- <link rel="stylesheet" href="styles.css"> -->
+    <title>Tower of Hanoi</title>
+    <link rel="stylesheet" href="/static/tower_of_hanoi.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <h1>Tower Of Hanoi Game</h1>
-    <script src="script.js"></script>
+    <div class="container">
+        <h1>Tower of Hanoi</h1>
+        <div class="game-modes">
+            <button id="mode-3peg" class="active">3 Pegs</button>
+            <button id="mode-4peg">4 Pegs</button>
+        </div>
+        <div class="game-info">
+            <div>Disks: <span id="disk-count">-</span></div>
+            <div>Minimum Moves: <span id="min-moves">-</span></div>
+            <div>Your Moves: <span id="your-moves">0</span></div>
+            <div>Time: <span id="minutes">00</span>:<span id="seconds">00</span></div>
+            <div>
+                <label for="disk-selector">Select Disks: </label>
+                <select id="disk-selector">
+                    <option value="random" selected>Random (5-10)</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                </select>
+            </div>
+        </div>
+        <div class="controls">
+            <button id="new-game">New Game</button>
+            <button id="show-solution">Show Solution</button>
+            <button id="submit-solution">Submit Solution</button>
+            <button id="manual-submit">Manual Submit</button>
+            <button id="toggle-move-history">Toggle Move History</button>
+            <button id="see-all-scores">See All Scores</button>
+            <button id="view-db-tables">View Database Tables</button>
+        </div>
+        <div class="game-area">
+            <div id="three-peg-towers" class="towers">
+                <div class="tower" id="tower-A">
+                    <div class="peg"></div>
+                    <div class="base"></div>
+                    <div class="tower-label">A</div>
+                </div>
+                <div class="tower" id="tower-B">
+                    <div class="peg"></div>
+                    <div class="base"></div>
+                    <div class="tower-label">B</div>
+                </div>
+                <div class="tower" id="tower-C">
+                    <div class="peg"></div>
+                    <div class="base"></div>
+                    <div class="tower-label">C</div>
+                </div>
+            </div>
+            <div id="four-peg-towers" class="towers hidden">
+                <div class="tower" id="tower-A-4">
+                    <div class="peg"></div>
+                    <div class="base"></div>
+                    <div class="tower-label">A</div>
+                </div>
+                <div class="tower" id="tower-B-4">
+                    <div class="peg"></div>
+                    <div class="base"></div>
+                    <div class="tower-label">B</div>
+                </div>
+                <div class="tower" id="tower-C-4">
+                    <div class="peg"></div>
+                    <div class="base"></div>
+                    <div class="tower-label">C</div>
+                </div>
+                <div class="tower" id="tower-D-4">
+                    <div class="peg"></div>
+                    <div class="base"></div>
+                    <div class="tower-label">D</div>
+                </div>
+            </div>
+        </div>
+        <div class="player-input-panel hidden" id="player-input">
+            <h3>Enter Your Name</h3>
+            <input type="text" id="player-name" placeholder="Your Name">
+            <button id="save-score">Save Score</button>
+            <button id="cancel-save">Cancel</button>
+        </div>
+        <div class="move-history-panel hidden" id="move-history">
+            <h3>Your Move History</h3>
+            <div class="move-list" id="move-history-list"></div>
+        </div>
+        <div class="tabbed-content">
+            <div class="tabs">
+                <button class="tab active" data-tab="instructions">Instructions</button>
+                <button class="tab" data-tab="scores">High Scores</button>
+                <button class="tab" data-tab="algorithms">Algorithm Comparison</button>
+                <button class="tab" data-tab="rounds-comparison">10 Rounds Comparison</button>
+            </div>
+            <div class="tab-content active" id="instructions-content">
+                <h3>How to Play</h3>
+                <p>Move all disks from peg A to peg C (3-peg) or D (4-peg) using the following rules:</p>
+                <ul>
+                    <li>Only one disk can be moved at a time.</li>
+                    <li>A larger disk cannot be placed on a smaller disk.</li>
+                    <li>Use auxiliary pegs to assist.</li>
+                </ul>
+                <p><strong>Controls:</strong> Drag and drop disks or submit move sequences.</p>
+            </div>
+            <div class="tab-content" id="scores-content">
+                <h3>Top Scores</h3>
+                <table id="scores-table">
+                    <thead><tr><th>Player</th><th>Disks</th><th>Moves</th></tr></thead>
+                    <tbody id="scores-body"></tbody>
+                </table>
+            </div>
+            <div class="tab-content" id="algorithms-content">
+                <h3>Algorithm Performance</h3>
+                <canvas id="algorithm-chart" style="max-height: 400px;"></canvas>
+                <table id="algorithm-table">
+                    <thead><tr><th>Disks</th><th>Algorithm</th><th>Pegs</th><th>Avg. Time (ms)</th></tr></thead>
+                    <tbody id="algorithm-body"></tbody>
+                </table>
+            </div>
+            <div class="tab-content" id="rounds-comparison-content">
+                <h3>10 Rounds Algorithm Performance</h3>
+                <canvas id="rounds-comparison-chart" style="max-height: 400px;"></canvas>
+                <table id="rounds-comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Disks</th>
+                            <th>Minimum Moves</th>
+                            <th>Average Time (ms)</th>
+                            <th>Mode</th>
+                            <th>Algorithm</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rounds-comparison-body"></tbody>
+                </table>
+            </div>
+        </div>
+        <div id="solution-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close">×</span>
+                <h3>Solution</h3>
+                <div class="solution-tabs">
+                    <button class="solution-tab active" data-solution="recursive">Recursive (3-peg)</button>
+                    <button class="solution-tab" data-solution="iterative">Iterative (3-peg)</button>
+                    <button class="solution-tab" data-solution="frame_stewart">Frame-Stewart (4-peg)</button>
+                </div>
+                <div class="solution-content">
+                    <div id="recursive-solution" class="solution-panel active">
+                        <p>Execution time: <span id="recursive-time"></span> ms</p>
+                        <div class="moves-list" id="recursive-moves"></div>
+                    </div>
+                    <div id="iterative-solution" class="solution-panel">
+                        <p>Execution time: <span id="iterative-time"></span> ms</p>
+                        <div class="moves-list" id="iterative-moves"></div>
+                    </div>
+                    <div id="frame_stewart-solution" class="solution-panel">
+                        <p>Execution time: <span id="frame_stewart-time"></span> ms</p>
+                        <div class="moves-list" id="frame_stewart-moves"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="success-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close">×</span>
+                <h3>Success!</h3>
+                <p id="success-message"></p>
+                <button id="play-again">Play Again</button>
+            </div>
+        </div>
+        <div id="all-scores-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close">×</span>
+                <h3>All Scores</h3>
+                <table id="all-scores-table">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Disks</th>
+                            <th>Moves</th>
+                            <th>Mode</th>
+                            <th>Score</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="all-scores-body"></tbody>
+                </table>
+            </div>
+        </div>
+        <div id="manual-submit-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close">×</span>
+                <h3>Manual Move Submission</h3>
+                <form id="manual-move-form">
+                    <div class="form-group">
+                        <label for="move-count">Number of Moves:</label>
+                        <input type="number" id="move-count" min="1" required placeholder="Enter number of moves">
+                    </div>
+                    <div class="form-group">
+                        <label for="move-sequence">Move Sequence:</label>
+                        <textarea id="move-sequence" rows="15" required placeholder="Enter each move on a new line: disk source dest (e.g., 1 A B)"></textarea>
+                    </div>
+                    <div class="form-buttons">
+                        <button type="submit">Submit Moves</button>
+                        <button type="button" id="cancel-manual-submit">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="/static/tower_of_hanoi.js"></script>
 </body>
 </html>
-
