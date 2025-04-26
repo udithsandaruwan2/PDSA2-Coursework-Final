@@ -29,93 +29,129 @@ def total_path_distance(path):
 
 def tsp_nearest_neighbor(cities):
     start_time = time.time()
+    n = len(cities)
+    home = cities[0]  # Home city
+    path = [home]  # Start with home
+    visited = {home['id']}  # Track visited cities
+    current = home
+    total_distance = 0
 
-    # Ensure home city is included in the path
-    path = cities[:]  # The cities already include the home city at both ends
-    logger.debug("Nearest Neighbor path:")
-    for i in range(len(path)):
-        a = path[i]
-        b = path[(i + 1) % len(path)]
-        d = calculate_distance(a, b)
-        if d is None:
-            logger.debug(f"NN: {a['id']} -> {b['id']}: Distance is None")
-        else:
-            if i == len(path) - 1:
-                logger.debug(f"NN: {a['id']} -> {b['id']} (last to home): {d:.4f} km")
-            else:
-                logger.debug(f"NN: {a['id']} -> {b['id']}: {d:.4f} km")
-    path_distance = total_path_distance(path)
+    # Visit all cities except the last (home)
+    while len(path) < n - 1:
+        min_dist = float('inf')
+        next_city = None
+        # Find closest unvisited city
+        for city in cities[1:-1]:  # Skip home at start and end
+            if city['id'] not in visited:
+                dist = calculate_distance(current, city)
+                if dist < min_dist:
+                    min_dist = dist
+                    next_city = city
+        if next_city:
+            path.append(next_city)
+            visited.add(next_city['id'])
+            total_distance += min_dist
+            current = next_city
+
+    # Return to home
+    path.append(home)
+    total_distance += calculate_distance(current, home)
+
     execution_time = time.time() - start_time
+    return path, total_distance, execution_time
 
-    return path, path_distance, execution_time
+
 def tsp_branch_and_bound(cities):
     start_time = time.time()
+    best_result = {'path': None, 'distance': float('inf')}
 
-    best_result = {
-        'path': None,
-        'distance': float('inf')
-    }
+    def find_mst(edges, vertices):
+        """Compute the weight of the Minimum Spanning Tree using Kruskal's algorithm."""
+        edges.sort(key=lambda x: x[2])
+        parent = {v: v for v in vertices}
+        rank = {v: 0 for v in vertices}
+
+        def find(v):
+            if parent[v] != v:
+                parent[v] = find(parent[v])
+            return parent[v]
+
+        def union(v1, v2):
+            root1, root2 = find(v1), find(v2)
+            if root1 != root2:
+                if rank[root1] < rank[root2]:
+                    parent[root1] = root2
+                elif rank[root1] > rank[root2]:
+                    parent[root2] = root1
+                else:
+                    parent[root2] = root1
+                    rank[root1] += 1
+
+        mst_weight = 0
+        for v1, v2, weight in edges:
+            if find(v1) != find(v2):
+                union(v1, v2)
+                mst_weight += weight
+        return mst_weight
 
     def bound(current_path, visited, current_distance):
-        # A simple lower-bound estimate: current distance + minimal outgoing edge from last visited city
+        """Estimate lower bound: current distance + MST of unvisited cities + min edges to/from home."""
         if not current_path:
             return 0
-
         last_city = current_path[-1]
         remaining = [city for city in cities[1:] if city['id'] not in visited]
-
-        min_estimate = float('inf')
+        if not remaining:
+            return current_distance + calculate_distance(last_city, cities[0])
+        edges = []
+        vertices = [city['id'] for city in remaining]
+        for i, city1 in enumerate(remaining):
+            for j, city2 in enumerate(remaining[i+1:], i+1):
+                dist = calculate_distance(city1, city2)
+                edges.append((city1['id'], city2['id'], dist))
+        mst_weight = find_mst(edges, vertices) if edges else 0
+        min_to_unvisited = float('inf')
         for city in remaining:
             dist = calculate_distance(last_city, city)
-            if dist < min_estimate:
-                min_estimate = dist
-
-        return current_distance + (min_estimate if remaining else 0)
+            if dist < min_to_unvisited:
+                min_to_unvisited = dist
+        min_to_home = float('inf')
+        for city in remaining:
+            dist = calculate_distance(city, cities[0])
+            if dist < min_to_home:
+                min_to_home = dist
+        return current_distance + min_to_unvisited + mst_weight + min_to_home
 
     def branch(current_path, visited, current_distance):
-        # Prune if bound exceeds best found
         estimate = bound(current_path, visited, current_distance)
         if estimate >= best_result['distance']:
             return
-
-        # If all cities visited (except home), finalize path
         if len(current_path) == len(cities) - 1:
             home = cities[0]
             last_city = current_path[-1]
             return_leg = calculate_distance(last_city, home)
             total_distance = current_distance + return_leg
-
-            if current_path and current_path[-1]['id'] == home['id']:
-                full_path = [home] + current_path  # Already ends in home
-            else:
-                full_path = [home] + current_path + [home]
-
+            # Fix: Construct path with home city only once at the end
+            full_path = [home] + current_path
             logger.debug("B&B candidate path:")
             for i in range(len(full_path) - 1):
                 a = full_path[i]
                 b = full_path[i + 1]
                 logger.debug(f"BB: {a['id']} -> {b['id']}: {calculate_distance(a, b):.4f} km")
-
             if total_distance < best_result['distance']:
                 best_result['distance'] = total_distance
                 best_result['path'] = full_path
             return
-
-        # Branch to unvisited cities
-        for city in cities[1:]:  # Skip home city (assumed cities[0])
+        for city in cities[1:]:
             if city['id'] not in visited:
                 visited.add(city['id'])
                 last_city = current_path[-1] if current_path else cities[0]
                 dist = calculate_distance(last_city, city)
                 current_path.append(city)
-
                 branch(current_path, visited, current_distance + dist)
-
                 current_path.pop()
                 visited.remove(city['id'])
 
     branch([], set(), 0)
-
     execution_time = time.time() - start_time
     return best_result['path'], best_result['distance'], execution_time
 
@@ -304,12 +340,12 @@ def save_game_session():
         player_name = data.get('player_name')
         home_city_char = data.get('home_city')
         selected_cities = data.get('selected_cities')
-        nn_distance = round(float(data.get('nn_distance')), 1)
-        bb_distance = round(float(data.get('bb_distance')), 1)
-        hk_distance = round(float(data.get('hk_distance')), 1)
-        nn_time = round(float(data.get('nn_time')), 1)
-        bb_time = round(float(data.get('bb_time')), 1)
-        hk_time = round(float(data.get('hk_time')), 1)
+        nn_distance = round(float(data.get('nn_distance')), 2)
+        bb_distance = round(float(data.get('bb_distance')), 2)
+        hk_distance = round(float(data.get('hk_distance')), 2)
+        nn_time = round(float(data.get('nn_time')), 2)
+        bb_time = round(float(data.get('bb_time')), 2)
+        hk_time = round(float(data.get('hk_time')), 2)
 
         # 🆕 Extract the routes
         nn_route = data.get('nn_route', [])
@@ -369,7 +405,7 @@ def save_win():
         game_session_id = db.record_game_session(
             player_name,
             home_city,
-            human_route,
+            selected_cities,
             nn_distance,
             bb_distance,
             hk_distance,
@@ -401,39 +437,156 @@ def save_win():
 @tsp_bp.route('/db_viewer', methods=['GET'])
 def db_viewer():
     try:
-        # Get game sessions and win players data
         game_sessions = db.get_all_sessions()
         win_players = db.get_all_win_players()
 
-        # ✅ Initialize the HTML string before appending
         html = """
         <html>
         <head>
+            <title>Database Viewer - Travelling Salesman Game</title>
             <style>
-                table { border-collapse: collapse; margin: 20px 0; width: 100%; }
-                th, td { border: 1px solid black; padding: 8px; text-align: left; }
-                th { background-color: #f2f2f2; }
+                body {
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    background-color: #f5f7fa;
+                    margin: 0;
+                    padding: 20px;
+                    color: #333;
+                }
+                .container {
+                    width: 90vw;  /* Use 90% of viewport width */
+                    margin: 0 auto;
+                    background-color: #ffffff;
+                    padding: 30px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                }
+                h2 {
+                    color: #2c3e50;
+                    font-size: 28px;
+                    margin-bottom: 15px;
+                    border-bottom: 2px solid #3498db;
+                    padding-bottom: 5px;
+                }
+                .table-wrapper {
+                    overflow-x: auto;  /* Enable horizontal scrolling on small screens */
+                    margin: 0px 0;
+                }
+                table {
+                    width: 100%;  /* Ensure table takes full width of container */
+                    border-collapse: collapse;
+                    background-color: #fff;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                }
+                th, td {
+                    padding: 12px 15px;
+                    text-align: left;
+                    border-bottom: 1px solid #e0e0e0;
+                    font-size: 14px;
+                    white-space: nowrap;  /* Prevent text wrapping */
+                }
+                th {
+                    background-color: #3498db;
+                    color: #ffffff;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                /* Specific column widths for Game Sessions table */
+                th:nth-child(1), td:nth-child(1) {  /* ID */
+                    min-width: 50px;
+                }
+                th:nth-child(2), td:nth-child(2) {  /* Player */
+                    min-width: 120px;
+                }
+                th:nth-child(3), td:nth-child(3) {  /* Home City */
+                    min-width: 80px;
+                }
+                th:nth-child(4), td:nth-child(4) {  /* Selected Cities */
+                    min-width: 200px;
+                }
+                th:nth-child(5), td:nth-child(5) {  /* NN Distance */
+                    min-width: 100px;
+                }
+                th:nth-child(6), td:nth-child(6) {  /* BB Distance */
+                    min-width: 100px;
+                }
+                th:nth-child(7), td:nth-child(7) {  /* HK Distance */
+                    min-width: 100px;
+                }
+                th:nth-child(8), td:nth-child(8) {  /* NN Time */
+                    min-width: 100px;
+                }
+                th:nth-child(9), td:nth-child(9) {  /* BB Time */
+                    min-width: 100px;
+                }
+                th:nth-child(10), td:nth-child(10) {  /* HK Time */
+                    min-width: 100px;
+                }
+                th:nth-child(11), td:nth-child(11) {  /* NN Route */
+                    min-width: 200px;
+                }
+                th:nth-child(12), td:nth-child(12) {  /* BB Route */
+                    min-width: 200px;
+                }
+                th:nth-child(13), td:nth-child(13) {  /* HK Route */
+                    min-width: 200px;
+                }
+                th:nth-child(14), td:nth-child(14) {  /* Timestamp */
+                    min-width: 150px;
+                }
+                /* Specific column widths for Win Players table */
+                .win-players-table th:nth-child(1), .win-players-table td:nth-child(1) {  /* Player Name */
+                    min-width: 120px;
+                }
+                .win-players-table th:nth-child(2), .win-players-table td:nth-child(2) {  /* Human Route */
+                    min-width: 200px;
+                }
+                .win-players-table th:nth-child(3), .win-players-table td:nth-child(3) {  /* Human Distance */
+                    min-width: 120px;
+                }
+                .win-players-table th:nth-child(4), .win-players-table td:nth-child(4) {  /* Session ID */
+                    min-width: 80px;
+                }
+                tr:nth-child(even) {
+                    background-color: #f9f9f9;
+                }
+                tr:hover {
+                    background-color: #e8f4f8;
+                    transition: background-color 0.3s ease;
+                }
+                td {
+                    color: #555;
+                }
+                @media (max-width: 768px) {
+                    table, th, td {
+                        font-size: 12px;
+                        padding: 8px;
+                    }
+                }
             </style>
         </head>
         <body>
-            <h2>Game Sessions</h2>
-            <table>
-                <tr>
-                    <th>ID</th>
-                    <th>Player</th>
-                    <th>Home City</th>
-                    <th>Selected Cities</th>
-                    <th>NN Distance</th>
-                    <th>BB Distance</th>
-                    <th>HK Distance</th>
-                    <th>NN Time</th>
-                    <th>BB Time</th>
-                    <th>HK Time</th>
-                    <th>NN Route</th>
-                    <th>BB Route</th>
-                    <th>HK Route</th>
-                    <th>Timestamp</th>
-                </tr>
+            <div class="container">
+                <h2>Game Sessions</h2>
+                <div class="table-wrapper">
+                    <table>
+                        <tr>
+                            <th>ID</th>
+                            <th>Player</th>
+                            <th>Home City</th>
+                            <th>Selected Cities</th>
+                            <th>NN Distance</th>
+                            <th>BB Distance</th>
+                            <th>HK Distance</th>
+                            <th>NN Time</th>
+                            <th>BB Time</th>
+                            <th>HK Time</th>
+                            <th>NN Route</th>
+                            <th>BB Route</th>
+                            <th>HK Route</th>
+                            <th>Timestamp</th>
+                        </tr>
         """
 
         for session in game_sessions:
@@ -457,15 +610,17 @@ def db_viewer():
             """
 
         html += """
-            </table>
-            <h2>Win Players</h2>
-            <table>
-                <tr>
-                    <th>Player Name</th>
-                    <th>Human Route</th>
-                    <th>Human Distance</th>
-                    <th>Session ID</th>
-                </tr>
+                    </table>
+                </div>
+                <h2>Win Players</h2>
+                <div class="table-wrapper">
+                    <table class="win-players-table">
+                        <tr>
+                            <th>Player Name</th>
+                            <th>Human Route</th>
+                            <th>Human Distance</th>
+                            <th>Session ID</th>
+                        </tr>
         """
 
         for win_player in win_players:
@@ -479,13 +634,14 @@ def db_viewer():
             """
 
         html += """
-            </table>
+                    </table>
+                </div>
+            </div>
         </body>
         </html>
         """
 
         return html
-
     except Exception as e:
         return f"Error viewing database: {str(e)}", 500
 
@@ -553,3 +709,60 @@ def get_city_distances():
     except Exception as e:
         logger.error(f"Error generating random city distances: {str(e)}")
         return jsonify({'error': 'Failed to generate distances'}), 500
+
+
+@tsp_bp.route('/tsp_assets/get_algorithm_stats', methods=['GET'])
+def get_algorithm_stats():
+    try:
+        # Fetch the most recent 10 game sessions
+        game_sessions = db.get_all_sessions()[:10]  # Already ordered by timestamp DESC
+        if not game_sessions:
+            return jsonify({'error': 'No game sessions found'}), 404
+
+        # Reverse the sessions so the most recent is last (will be round 10)
+        game_sessions = list(reversed(game_sessions))
+
+        # Prepare data for the chart
+        nn_times = []
+        bb_times = []
+        hk_times = []
+        city_counts = []  # List to store the number of cities selected (excluding home city)
+        rounds = list(range(1, min(len(game_sessions) + 1, 11)))  # Game rounds 1 to 10
+
+        for session in game_sessions:
+            # session indices: nn_time=7, bb_time=8, hk_time=9 (convert seconds to milliseconds)
+            nn_times.append(float(session[7]) * 1000)  # Convert to milliseconds
+            bb_times.append(float(session[8]) * 1000)
+            hk_times.append(float(session[9]) * 1000)
+
+            # session[3] is selected_cities, a JSON string like ['B', 'C']
+            
+            try:
+                selected_cities = json.loads(session[3])
+                if selected_cities:
+                    # Count all cities in the route
+                    city_counts.append(len(selected_cities))
+                else:
+                    city_counts.append(0)
+            except json.JSONDecodeError:
+                logger.error(f"Error parsing selected_cities: {session[3]}")
+                city_counts.append(0)
+
+        # If fewer than 10 sessions, pad with zeros
+        while len(nn_times) < 10:
+            nn_times.append(0)
+            bb_times.append(0)
+            hk_times.append(0)
+            city_counts.append(0)
+            rounds.append(rounds[-1] + 1 if rounds else 1)
+
+        return jsonify({
+            'rounds': rounds,
+            'nn_times': nn_times,
+            'bb_times': bb_times,
+            'hk_times': hk_times,
+            'city_counts': city_counts  # Number of cities selected (excluding home city)
+        })
+    except Exception as e:
+        logger.error(f"Error fetching algorithm stats: {str(e)}")
+        return jsonify({'error': 'Failed to fetch algorithm statistics'}), 500

@@ -16,8 +16,8 @@ class TSPDatabase:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 # drop tables if they exist (for development purposes)
-                cursor.execute('DROP TABLE IF EXISTS game_sessions')
-                cursor.execute('DROP TABLE IF EXISTS win_players')
+                #cursor.execute('DROP TABLE IF EXISTS game_sessions')
+                #cursor.execute('DROP TABLE IF EXISTS win_players')
                 # Create game_sessions table (updated for BB)
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS game_sessions (

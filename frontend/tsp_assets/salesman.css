@@ -1,153 +1,525 @@
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
     text-align: center;
-    background: linear-gradient(to right, #f0f4f8, #e9f0f7);
-    padding: 30px;
-    color: #333;
+    background: linear-gradient(135deg, #f0f5ff, #e6f0ff);
+    padding: 2rem;
+    color: #1a202c;
+    margin: 0;
+    line-height: 1.6;
+    min-height: 100vh;
+    transition: all 0.3s ease;
 }
 
 h1 {
-    margin-bottom: 15px;
-    font-size: 32px;
-    color: #222;
+    margin: 0 0 1.5rem;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2d3748;
+    letter-spacing: -0.5px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 #cityCanvas {
-    border: 2px solid #333;
-    background-color: #fff;
-    margin: 20px auto;
+    border-radius: 12px;
+    border: none;
+    background-color: #ffffff;
+    margin: 0 auto 1.5rem;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    max-width: 100%;
+    height: auto;
+    transition: transform 0.3s ease;
+}
+
+#cityCanvas:hover {
+    transform: translateY(-4px);
 }
 
 #controls {
-    margin-top: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    margin: 1.5rem 0;
 }
 
-#controls button {
-    margin: 8px;
-    padding: 12px 24px;
-    font-size: 16px;
-    font-weight: 500;
-    background-color: #007BFF;
-    color: white;
+button {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #ffffff;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s ease-in-out;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
 }
 
-#controls button:hover {
-    background-color: #0056b3;
-    transform: translateY(-1px);
-    box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+button:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-100%);
+    transition: transform 0.2s ease;
 }
 
-#controls button:active {
-    transform: translateY(1px);
-    box-shadow: none;
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
 }
 
-#toggles {
-    margin: 20px 0;
-    padding: 12px;
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.08);
-    display: inline-block;
+button:hover:before {
+    transform: translateY(0);
 }
 
-#toggles label {
-    margin: 0 10px;
-    font-weight: 500;
-    color: #333;
+button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-#result {
-    margin-top: 20px;
-    font-weight: bold;
-    font-size: 18px;
-    color: #007BFF;
+/* Reset Button - Vibrant Red */
+button:nth-child(1) {
+    background: linear-gradient(135deg, #ff4d6d, #ff3366);
+    box-shadow: 0 4px 12px rgba(255, 77, 109, 0.3);
 }
 
-#resultMessage {
-    font-size: 20px;
+button:nth-child(1):hover {
+    box-shadow: 0 6px 16px rgba(255, 77, 109, 0.4);
+}
+
+/* Submit Route Button - Vibrant Blue */
+button:nth-child(2) {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+}
+
+button:nth-child(2):hover {
+    box-shadow: 0 6px 16px rgba(79, 172, 254, 0.4);
+}
+
+/* Compare with Algorithms Button - Teal */
+button:nth-child(3) {
+    background: linear-gradient(135deg, #0ba360, #3cba92);
+    box-shadow: 0 4px 12px rgba(11, 163, 96, 0.3);
+}
+
+button:nth-child(3):hover {
+    box-shadow: 0 6px 16px rgba(11, 163, 96, 0.4);
+}
+
+/* View Statistics Button - Purple */
+button:nth-child(4) {
+    background: linear-gradient(135deg, #8e2de2, #4a00e0);
+    box-shadow: 0 4px 12px rgba(142, 45, 226, 0.3);
+}
+
+button:nth-child(4):hover {
+    box-shadow: 0 6px 16px rgba(142, 45, 226, 0.4);
+}
+
+/* Algorithm Statistics Button - Orange */
+button:nth-child(5) {
+    background: linear-gradient(135deg, #ff9966, #ff5e62);
+    box-shadow: 0 4px 12px rgba(255, 153, 102, 0.3);
+}
+
+button:nth-child(5):hover {
+    box-shadow: 0 6px 16px rgba(255, 153, 102, 0.4);
+}
+
+#resultCards {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.result-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    width: 260px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.result-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.12);
+}
+
+.result-card h3 {
+    margin: 0 0 1rem;
+    font-size: 1.25rem;
+    color: #4361ee;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+.result-card p {
+    margin: 0.5rem 0;
+    font-size: 1rem;
+    color: #4a5568;
+    line-height: 1.5;
+}
+
+.result-card p strong {
+    color: #2d3748;
     font-weight: 600;
-    color: #28a745;
-    margin-top: 15px;
+}
+
+/* Path active styles with improved gradients */
+.result-card.path-active {
+    color: #ffffff;
+    transform: translateY(-6px);
+    border: none;
+}
+
+.result-card.path-active h3 {
+    color: #ffffff;
+}
+
+.result-card.path-active p {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.result-card.path-active p strong {
+    color: #ffffff;
+}
+
+/* Human Card - Blue */
+#resultCards .result-card:nth-child(1).path-active {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    box-shadow: 0 12px 30px rgba(79, 172, 254, 0.3);
+}
+
+/* Nearest Neighbor Card - Green */
+#resultCards .result-card:nth-child(2).path-active {
+    background: linear-gradient(135deg, #0ba360, #3cba92);
+    box-shadow: 0 12px 30px rgba(11, 163, 96, 0.3);
+}
+
+/* Branch and Bound Card - Purple */
+#resultCards .result-card:nth-child(3).path-active {
+    background: linear-gradient(135deg, #8e2de2, #4a00e0);
+    box-shadow: 0 12px 30px rgba(142, 45, 226, 0.3);
+}
+
+/* Held-Karp Card - Orange */
+#resultCards .result-card:nth-child(4).path-active {
+    background: linear-gradient(135deg, #ff9966, #ff5e62);
+    box-shadow: 0 12px 30px rgba(255, 153, 102, 0.3);
+}
+
+#resultCards .result-card:nth-child(4).path-active h3,
+#resultCards .result-card:nth-child(4).path-active p,
+#resultCards .result-card:nth-child(4).path-active strong {
+    color: #ffffff;
+}
+
+/* Ensure distance and time spans are visible */
+#humanDistance, #nnDistance, #bbDistance, #hkDistance,
+#nnTime, #bbTime, #hkTime {
+    display: inline !important;
+    font-weight: 600;
+    color: inherit;
 }
 
 #homeCityInfo {
-    margin-top: 15px;
-    font-size: 18px;
-    font-weight: bold;
-    color: #444;
+    margin-top: 1.5rem;
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: #4a5568;
+}
+
+#homeCityInfo p {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 0.75rem 1.25rem;
+    margin: 0.75rem auto;
+    width: fit-content;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
 .stats-table {
     width: 90%;
     max-width: 900px;
-    margin: 20px auto;
-    border-collapse: collapse;
+    margin: 2rem auto;
+    border-collapse: separate;
+    border-spacing: 0;
     background-color: #ffffff;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    border-radius: 8px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
     overflow: hidden;
 }
 
-.stats-table th, .stats-table td {
-    padding: 14px;
+.stats-table th,
+.stats-table td {
+    padding: 1rem 1.25rem;
     text-align: center;
-    border-bottom: 1px solid #ddd;
 }
 
 .stats-table th {
-    background-color: #007BFF;
-    color: white;
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    color: #ffffff;
     font-weight: 600;
+    letter-spacing: 0.3px;
+    font-size: 1rem;
+    border-bottom: none;
+}
+
+.stats-table tr:not(:last-child) td {
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .stats-table tr:nth-child(even) {
-    background-color: #f9f9f9;
+    background-color: #f7fafc;
 }
 
-.stats-table tr:hover {
-    background-color: #f1f1f1;
+.stats-table tr:hover td {
+    background-color: #edf2f7;
 }
 
 #error {
-    color: #dc3545;
-    padding: 10px;
-    margin: 10px auto;
-    border: 1px solid #dc3545;
-    border-radius: 4px;
-    background-color: #fff;
+    color: #ff4d6d;
+    padding: 1rem;
+    margin: 1rem auto;
+    border: 1px solid rgba(255, 77, 109, 0.3);
+    border-radius: 8px;
+    background-color: rgba(255, 77, 109, 0.05);
     width: fit-content;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(255, 77, 109, 0.1);
 }
 
 #statsResult {
-    margin-top: 30px;
-    padding: 20px;
-    background-color: #fefefe;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    margin: 2rem auto;
+    padding: 1.5rem;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    display: none;
+    max-width: 900px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
 .result-message {
-    font-size: 18px;
-    font-weight: bold;
-}
-
-.hidden-toggle {
-    display: none;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #2d3748;
+    line-height: 1.5;
 }
 
 .hidden-result {
     display: none;
 }
 
-#statsResult {
-    display: none;
+/* Style the database link */
+#content > a {
+    display: inline-block;
+    margin-top: 1.5rem;
+    font-size: 1rem;
+    color: #4facfe;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    background-color: rgba(79, 172, 254, 0.1);
 }
 
+#content > a:hover {
+    color: #00b2fe;
+    background-color: rgba(79, 172, 254, 0.15);
+    transform: translateY(-2px);
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(4px);
+    transition: all 0.3s ease;
+}
+
+.modal-content {
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    position: relative;
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
+}
+
+.modal.active .modal-content {
+    transform: scale(1);
+}
+
+#resultModalMessage {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+    display: block;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+.modal-close-btn {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    color: #ffffff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+}
+
+.modal-close-btn:hover {
+    background: linear-gradient(135deg, #00f2fe, #4facfe);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(79, 172, 254, 0.4);
+}
+
+.modal-close-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(79, 172, 254, 0.3);
+}
+
+/* Responsive styles */
+@media (max-width: 992px) {
+    body {
+        padding: 1.5rem;
+    }
+    
+    h1 {
+        font-size: 2.25rem;
+    }
+    
+    .result-card {
+        width: calc(50% - 1rem);
+        min-width: 240px;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 1rem;
+    }
+    
+    h1 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+    
+    #controls {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    button {
+        width: 100%;
+        max-width: 300px;
+        margin: 0 auto;
+    }
+    
+    #cityCanvas {
+        width: 95% !important;
+        height: auto !important;
+        margin-bottom: 1rem;
+    }
+    
+    .result-card {
+        width: 100%;
+        max-width: 300px;
+    }
+    
+    .stats-table {
+        width: 100%;
+        font-size: 0.875rem;
+    }
+    
+    .stats-table th,
+    .stats-table td {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .modal-content {
+        width: 85%;
+        max-width: 320px;
+        padding: 1.5rem;
+    }
+    
+    #resultModalMessage {
+        font-size: 1.125rem;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.75rem;
+    }
+    
+    #controls button {
+        font-size: 0.9rem;
+        padding: 0.75rem 1rem;
+    }
+    
+    .result-card {
+        padding: 1.25rem;
+    }
+    
+    .result-card h3 {
+        font-size: 1.125rem;
+    }
+    
+    .result-card p {
+        font-size: 0.9rem;
+    }
+    
+    #homeCityInfo {
+        font-size: 1rem;
+    }
+    
+    .modal-content {
+        padding: 1.25rem;
+    }
+    
+    #resultModalMessage {
+        font-size: 1rem;
+        margin-bottom: 1.25rem;
+    }
+    
+    .modal-close-btn {
+        padding: 0.625rem 1.25rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* Font import for better typography */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');

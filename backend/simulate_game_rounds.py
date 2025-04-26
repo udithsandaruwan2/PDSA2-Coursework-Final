@@ -52,10 +52,10 @@ def simulate_game_round(round_number):
             "Round": round_number,
             "NumCities": NUM_SELECTED_CITIES,
             "NN_Time": round(data["nearest_neighbor"]["time"] * 1000, 2),
-            "BF_Time": round(data["brute_force"]["time"] * 1000, 2),
+            "BB_Time": round(data["branch_bound"]["time"] * 1000, 2),
             "HK_Time": round(data["held_karp"]["time"] * 1000, 2),
             "NN_Distance": round(data["nearest_neighbor"]["distance"], 2),
-            "BF_Distance": round(data["brute_force"]["distance"], 2),
+            "BB_Distance": round(data["branch_bound"]["distance"], 2),
             "HK_Distance": round(data["held_karp"]["distance"], 2),
             "Human_Distance": round(data["human_route"]["distance"], 2),
         }

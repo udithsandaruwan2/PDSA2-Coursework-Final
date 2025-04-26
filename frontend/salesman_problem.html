@@ -7,41 +7,53 @@
     <link rel="stylesheet" href="tsp_assets/salesman.css">
 </head>
 <body>
-    <h1>Travelling Salesman Problem</h1>
-    <p id="resultMessage" class="result-message"></p>
-    <canvas id="cityCanvas" width="700" height="500"></canvas>
-
-    <div id="controls">
-        <button onclick="resetGame()">Reset</button>
-        <button onclick="submitRoute()">Submit Route</button>
-        <button onclick="compareWithAlgorithms()">Compare with Algorithms</button>
-        <button id="viewStatsButton" onclick="viewCityDistances()">View Statistics</button>
-
+    <div id="gameContainer">
+        <h1>Travelling Salesman Game</h1>
+        <div id="homeCityInfo">
+            <p id="homeCity">Home City: N/A</p>
+        </div>
+        <canvas id="cityCanvas" width="800" height="500"></canvas>
+        <div id="controls">
+            <button onclick="resetGame()">Reset</button>
+            <button onclick="submitRoute()">Submit Route</button>
+            <button onclick="compareWithAlgorithms()">Compare with Algorithms</button>
+            <button onclick="viewCityDistances()">View Distances</button>
+            <button onclick="viewAlgorithmStats()">Algorithm Statistics</button>
+        </div>
+        <div id="resultCards">
+            <div class="result-card" id="humanCard">
+                <h3>Human</h3>
+                <p>Distance: <span id="humanDistance">N/A</span></p>
+                <p>Time: <span>0.00 ms</span></p>
+            </div>
+            <div class="result-card hidden-result" id="nnCard">
+                <h3>Nearest Neighbor</h3>
+                <p>Distance: <span id="nnDistance">N/A</span></p>
+                <p>Time: <span id="nnTime">N/A</span></p>
+            </div>
+            <div class="result-card hidden-result" id="bbCard">
+                <h3>Branch and Bound</h3>
+                <p>Distance: <span id="bbDistance">N/A</span></p>
+                <p>Time: <span id="bbTime">N/A</span></p>
+            </div>
+            <div class="result-card hidden-result" id="hkCard">
+                <h3>Held-Karp</h3>
+                <p>Distance: <span id="hkDistance">N/A</span></p>
+                <p>Time: <span id="hkTime">N/A</span></p>
+            </div>
+        </div>
+        <div id="statsResult">
+            <div id="statsContent"></div>
+        </div>
+        <div id="content"></div>
     </div>
 
-    <div id="toggles" class="hidden-toggle">
-        <label><input type="checkbox" id="showHuman" checked onchange="drawCities()"> Show Human Path</label>
-        <label><input type="checkbox" id="showNN" onchange="drawCities()"> Show Nearest Neighbour Path</label>
-        <label><input type="checkbox" id="showbb" onchange="drawCities()"> Show Branch & Bound Path</label>
-        <!-- Added Held-Karp Path Toggle -->
-        <label><input type="checkbox" id="showHK" onchange="drawCities()"> Show Held-Karp Path</label>
-    </div>
-
-    <div id="result">
-        <p id="humanResult">Human Distance: N/A</p>
-        <p id="nnResult" class="hidden-result">Nearest Neighbour Distance: N/A</p>
-        <p id="bbResult" class="hidden-result">Branch & Bound Distance: N/A</p>
-        <!-- Held-Karp Result -->
-        <p id="hkResult" class="hidden-result">Held-Karp Distance: N/A</p>
-    </div>
-
-    <!-- Add this new section to display the Home City -->
-    <div id="homeCityInfo">
-        <p id="homeCity"></p> <!-- This will display the home city info -->
-    </div>
-
-    <div id="statsResult" class="hidden-result">
-        <div id="statsContent"></div> <!-- Where the table will be displayed -->
+    <!-- Modal for result message -->
+    <div id="resultModal" class="modal">
+        <div class="modal-content">
+            <span id="resultModalMessage"></span>
+            <button id="closeModal" class="modal-close-btn">Close</button>
+        </div>
     </div>
 
     <script src="tsp_assets/salesman.js"></script>
