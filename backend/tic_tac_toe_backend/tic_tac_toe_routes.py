@@ -104,3 +104,25 @@ def view_database():
                            moves=ai_moves,
                            sessions=sessions, 
                            user_moves=user_moves)
+
+@tic_tac_toe_bp.route('/performance')
+def tic_tac_toe_performance():
+    return render_template("/tic_tac_toe_assests/performance.html")
+
+@tic_tac_toe_bp.route('/get_performance' , methods=['GET'])
+def tic_tac_toe_get_performance():
+    print("Fetching performance data...")
+    # Fetch performance data from the database
+    data = db.get_tictactoe_performance()
+    print("Performance data fetched successfully.")
+    print(data)
+    return jsonify(data)
+
+@tic_tac_toe_bp.route('/get_performance_rounds' , methods=['GET'])
+def tic_tac_toe_get_performance_rounds():
+    print("Fetching performance data...")
+    # Fetch performance data from the database
+    data = db.get_tictactoe_performance_rounds()
+    print("Performance data fetched successfully.")
+    print(data)
+    return jsonify(data)

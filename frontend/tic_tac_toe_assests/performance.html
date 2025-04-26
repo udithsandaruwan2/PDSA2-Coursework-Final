@@ -1,0 +1,238 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Algorithm Comparison - Tic Tac Toe</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #f4f4f4;
+      padding: 40px;
+    }
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 900px;
+      margin: auto;
+      box-shadow: 0 0 10px #ccc;
+    }
+    canvas {
+      max-width: 100%;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Tic Tac Toe Algorithm Time Comparison (Last 10 Moves)</h2>
+    <canvas id="algoChart"></canvas>
+    <button onclick="window.location.href='../tic-tac-toe.html'">⬅ Back to Game</button>
+  </div>
+
+  <script>
+    fetch('/tic_tac_toe/get_performance')
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      const minimaxData = data.metrics.minimax.map((m, i) => m.duration_ms);
+      const mctsData = data.metrics.mcts.map((m, i) => m.duration_ms);
+
+      const labels = [...Array(Math.max(minimaxData.length, mctsData.length)).keys()].map(i => `Move ${i + 1}`);
+
+      const ctx = document.getElementById('algoChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Minimax (ms)',
+              data: minimaxData,
+              borderColor: 'rgba(255, 99, 132, 1)',
+              backgroundColor: 'rgba(255, 99, 132, 0.2)',
+              tension: 0.3
+            },
+            {
+              label: 'MCTS (ms)',
+              data: mctsData,
+              borderColor: 'rgba(54, 162, 235, 1)',
+              backgroundColor: 'rgba(54, 162, 235, 0.2)',
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'top' },
+            title: {
+              display: true,
+              text: 'Tic Tac Toe: AI Algorithm Duration (Last 10 Moves)'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Duration (ms)'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Move Index'
+              }
+            }
+          }
+        }
+      });
+    } else {
+      alert("No performance data available.");
+    }
+  })
+  .catch(err => {
+    console.error("Error:", err);
+  });
+
+  </script>
+</body>
+</html> -->
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Performance Chart - Tic Tac Toe</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #f4f4f4;
+      padding: 40px;
+    }
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 900px;
+      margin: auto;
+      box-shadow: 0 0 10px #ccc;
+    }
+    canvas {
+      max-width: 100%;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      background-color: #007bff;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Average AI Move Duration per Round</h2>
+    <canvas id="algoChart"></canvas>
+    <button onclick="window.location.href='../tic_tac_toe.html'">⬅ Back to Game</button>
+  </div>
+
+  <script>
+    fetch('/tic_tac_toe/get_performance_rounds')  // Make sure this matches your Flask route
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          const minimaxDurations = data.metrics.minimax || [];
+          const mctsDurations = data.metrics.mcts || [];
+
+          const rounds = Array.from({ length: Math.max(minimaxDurations.length, mctsDurations.length) }, (_, i) => `Round ${i + 1}`);
+
+          const ctx = document.getElementById('algoChart').getContext('2d');
+
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: rounds,
+              datasets: [
+                {
+                  label: 'Minimax (ms)',
+                  data: minimaxDurations,
+                  borderColor: 'rgba(255, 99, 132, 1)',
+                  backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                  tension: 0.3,
+                  spanGaps: true
+                },
+                {
+                  label: 'MCTS (ms)',
+                  data: mctsDurations,
+                  borderColor: 'rgba(54, 162, 235, 1)',
+                  backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                  tension: 0.3,
+                  spanGaps: true
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: { position: 'top' },
+                title: {
+                  display: true,
+                  text: 'AI Move Time per Round (Last 10 Sessions)'
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: 'Average Duration (ms)'
+                  }
+                },
+                x: {
+                  title: {
+                    display: true,
+                    text: 'Rounds'
+                  }
+                }
+              }
+            }
+          });
+
+        } else {
+          alert('No performance data available.');
+        }
+      })
+      .catch(error => {
+        console.error('Error loading chart data:', error);
+      });
+  </script>
+</body>
+</html>

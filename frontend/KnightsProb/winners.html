@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🏆 Winners - Knight's Tour</title>
+  <link rel="stylesheet" href="./Knight.css">
+</head>
+<body>
+  <div class="container">
+    <h2>🏆 Winners List</h2>
+    <table border="1" cellpadding="8" style="margin-top: 20px; width: 100%;" id="winners-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Start X</th>
+          <th>Start Y</th>
+          <th>Path</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <button onclick="window.location.href='../knight_problem.html'" style="margin-top: 20px;">⬅ Back to Game</button>
+  </div>
+
+  <script>
+    fetch('http://127.0.0.1:5000/knight/get_winners')
+      .then(response => response.json())
+      .then(data => {
+        const tableBody = document.querySelector('#winners-table tbody');
+        tableBody.innerHTML = '';
+
+        if (data.success && data.winners.length > 0) {
+          data.winners.forEach(winner => {
+            const row = document.createElement('tr');
+
+            const idCell = document.createElement('td');
+            idCell.textContent = winner.id;
+
+            const nameCell = document.createElement('td');
+            nameCell.textContent = winner.name;
+
+            const startXCell = document.createElement('td');
+            startXCell.textContent = winner.start_x;
+
+            const startYCell = document.createElement('td');
+            startYCell.textContent = winner.start_y;
+
+            const pathCell = document.createElement('td');
+            pathCell.textContent = winner.path.join(' → ');  // format the path nicely
+
+            const timestampCell = document.createElement('td');
+            timestampCell.textContent = new Date(winner.timestamp).toLocaleString();
+
+            row.appendChild(idCell);
+            row.appendChild(nameCell);
+            row.appendChild(startXCell);
+            row.appendChild(startYCell);
+            row.appendChild(pathCell);
+            row.appendChild(timestampCell);
+
+            tableBody.appendChild(row);
+          });
+        } else {
+          const row = document.createElement('tr');
+          const cell = document.createElement('td');
+          cell.colSpan = 6;
+          cell.textContent = 'No winners found.';
+          row.appendChild(cell);
+          tableBody.appendChild(row);
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching winners:', error);
+      });
+  </script>
+</body>
+</html>

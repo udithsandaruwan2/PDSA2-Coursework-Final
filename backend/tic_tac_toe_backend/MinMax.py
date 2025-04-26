@@ -32,7 +32,6 @@ def evaluate_heuristic(game_state: GameState):
             score += line_sum ** 2
         elif line_sum < 0:
             score += line_sum ** 2
-
     return score
 
 

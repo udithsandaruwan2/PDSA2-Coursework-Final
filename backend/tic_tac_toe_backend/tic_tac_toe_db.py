@@ -5,7 +5,7 @@ from datetime import datetime
 from tic_tac_toe_backend.GameEngine import games  # Assuming this is where your game sessions are stored
 
 class TicTacToeDatabase:
-    def __init__(self, db_path="database/tic_tac_toe.db"):
+    def __init__(self, db_path="../database/tic_tac_toe.db"):
         # Ensure this path is persistent on your disk
         current_dir = os.path.dirname(os.path.abspath(__file__))  # get the current directory
         self.db_path = os.path.join(current_dir, db_path)  # full path to your database
@@ -189,3 +189,82 @@ class TicTacToeDatabase:
         except sqlite3.Error as e:
             print(f"Error fetching User move logs: {e}")
             return []
+        
+    def get_tictactoe_performance(self):
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+
+                performance = {'minimax': [], 'mcts': []}
+
+                # Get last 10 moves for minimax
+                cursor.execute('''
+                    SELECT algorithm, duration_ms, timestamp
+                    FROM ai_move_logs
+                    WHERE algorithm = 'minimax'
+                    ORDER BY timestamp DESC
+                    LIMIT 10
+                ''')
+                performance['minimax'] = [
+                    {'duration_ms': row['duration_ms'], 'timestamp': row['timestamp']}
+                    for row in cursor.fetchall()
+                ][::-1]
+
+                # Get last 10 moves for mcts
+                cursor.execute('''
+                    SELECT algorithm, duration_ms, timestamp
+                    FROM ai_move_logs
+                    WHERE algorithm = 'mcts'
+                    ORDER BY timestamp DESC
+                    LIMIT 10
+                ''')
+                performance['mcts'] = [
+                    {'duration_ms': row['duration_ms'], 'timestamp': row['timestamp']}
+                    for row in cursor.fetchall()
+                ][::-1]
+
+                return {'success': True, 'metrics': performance}
+
+        except Exception as e:
+            print("DB Error:", e)
+            return {'success': False, 'metrics': {}}
+        
+    def get_tictactoe_performance_rounds(self):
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+
+                # Step 1: Get last 10 unique session IDs ordered by latest timestamp
+                cursor.execute('''
+                    SELECT DISTINCT session_id
+                    FROM ai_move_logs
+                    ORDER BY timestamp DESC
+                    LIMIT 10
+                ''')
+                sessions = [row['session_id'] for row in cursor.fetchall()]
+                sessions.reverse()  # Reverse to get chronological order (oldest to newest)
+
+                # Step 2: For each session, get avg duration per algorithm
+                performance = {'minimax': [], 'mcts': []}
+
+                for session_id in sessions:
+                    cursor.execute('''
+                        SELECT algorithm, AVG(duration_ms) as avg_duration
+                        FROM ai_move_logs
+                        WHERE session_id = ?
+                        GROUP BY algorithm
+                    ''', (session_id,))
+                    rows = cursor.fetchall()
+
+                    for row in rows:
+                        algo = row['algorithm'].lower()
+                        if algo in performance:
+                            performance[algo].append(round(row['avg_duration'], 2))  # Round for frontend display
+
+                return {'success': True, 'metrics': performance}
+
+        except Exception as e:
+            print("DB Error:", e)
+            return {'success': False, 'metrics': {}}
