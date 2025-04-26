@@ -7,14 +7,14 @@ import json
 logger = logging.getLogger(__name__)
 
 # Ensure the database directory exists
-os.makedirs('../database', exist_ok=True)
+os.makedirs('../../database', exist_ok=True)
 
 @contextmanager
 def get_db_connection():
     """Context manager for database connections"""
     conn = None
     try:
-        db_path = os.path.abspath('../database/tower_of_hanoi.db')
+        db_path = os.path.abspath('../../database/tower_of_hanoi.db')
         logger.debug(f"Connecting to database at: {db_path}")
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
@@ -25,6 +25,7 @@ def get_db_connection():
     finally:
         if conn:
             conn.close()
+
 def init_db():
     """Initialize the database tables if they don't exist"""
     try:

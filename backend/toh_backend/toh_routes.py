@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, render_template_string
-import toh_db
+from . import toh_db
 import random
 import time
 import json

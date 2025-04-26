@@ -4,8 +4,8 @@ from flask_cors import CORS
 from tsp_backend.tsp_routes import tsp_bp
 from tic_tac_toe_backend.tic_tac_toe_routes import tic_tac_toe_bp
 from KnightProbBackend.KnightTourRoute import knight_blueprint
-from tower_of_hanoi_backend import toh_routes
-from tower_of_hanoi_backend import toh_db
+from toh_backend import toh_routes
+from toh_backend import toh_db
 import traceback
 
 # Configure centralized logging

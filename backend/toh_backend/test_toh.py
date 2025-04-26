@@ -1,5 +1,5 @@
 import unittest
-from ..toh_routes import solve_toh_recursive, solve_toh_iterative, frame_stewart_algorithm, validate_move_sequence
+from .toh_routes import solve_toh_recursive, solve_toh_iterative, frame_stewart_algorithm, validate_move_sequence
 
 class TestTowerOfHanoiFunctions(unittest.TestCase):
     def setUp(self):
