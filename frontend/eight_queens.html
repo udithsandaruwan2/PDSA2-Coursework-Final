@@ -1,13 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <manent charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eight queens’ puzzle</title>
-    <!-- <link rel="stylesheet" href="styles.css"> -->
+    <title>Eight Queens Puzzle</title>
+    <link rel="stylesheet" href="eqp_assets/eight_queens.css">
 </head>
 <body>
-    <h1>Eight queens’ puzzle Game</h1>
-    <script src="script.js"></script>
+    <div class="container">
+        <header>
+            <h1>Eight Queens Puzzle</h1>
+        </header>
+
+        <div class="game-layout">
+            <div class="center-panel">
+                <div id="board" class="chessboard" role="grid" aria-label="8x8 chessboard for placing queens"></div>
+                <p>Queens Placed: <span id="queenCount">0</span></p>
+                <div id="progress">
+                    <p>Unique Solutions: <span id="solutionCount">0</span>/92</p>
+                    <div id="progressBar"><div id="progressFill"></div></div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <section class="rules">
+                    <h2>Rules</h2>
+                    <ul>
+                        <li>Place exactly 8 queens on the board.</li>
+                        <li>Queens cannot attack each other.</li>
+                        <li>No two queens can share the same row, column, or diagonal.</li>
+                        <li>Click on a square to place or remove a queen.</li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+
+        <div id="controls">
+            <div>
+                <label for="username">Username:</label>
+                <input type="text" id="username" placeholder="Enter your username" aria-label="Enter your username">
+            </div>
+            <button id="validateBtn" aria-label="Submit your Eight Queens solution">Submit Solution</button>
+            <button id="undoBtn" aria-label="Undo last queen placement">Undo Move</button>
+            <button id="resetBtn" aria-label="Reset the chessboard">Reset Board</button>
+            <button id="viewDbBtn" aria-label="View database contents">View Database</button>
+            <button id="computeBtn" aria-label="Compute all Eight Queens solutions">Compute Solutions</button>
+            <div>
+                <label for="roundsInput">Rounds:</label>
+                <input type="number" id="roundsInput" min="1" placeholder="Enter number of rounds" aria-label="Enter number of rounds">
+            </div>
+            <button id="viewStatsBtn" aria-label="View performance statistics">View Performance Stats</button>
+            <button id="viewPlayerStatsBtn" aria-label="View player statistics">View Player Stats</button>
+        </div>
+
+        <div id="results"></div>
+
+        <div class="results">
+            <h2>Leaderboard</h2>
+            <ul id="leaderboardList"></ul>
+            <h2>Performance Metrics</h2>
+            <div id="performanceMetrics"></div>
+            <h2>Database Contents</h2>
+            <div id="databaseContents"></div>
+        </div>
+
+        <footer>
+            <p>Developed by [Your Name]</p>
+        </footer>
+    </div>
+    <script src="eqp_assets/eight_queens.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 </body>
 </html>
