@@ -6,14 +6,9 @@
 }
 
 :root {
-    --primary-color: #6c5ce7;
-    --primary-light: #a29bfe;
-    --accent-color: #00cec9;
-    --text-light: #ffffff;
+    --text-light: #000000;
     --text-dark: #2d3436;
-    --background: #1e272e;
-    --card-bg: #2d3436;
-    --card-hover: #34495e;
+
 }
 
 body {
