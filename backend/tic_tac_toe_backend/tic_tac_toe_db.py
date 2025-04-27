@@ -241,7 +241,7 @@ class TicTacToeDatabase:
                     SELECT DISTINCT session_id
                     FROM ai_move_logs
                     ORDER BY timestamp DESC
-                    LIMIT 10
+                    LIMIT 20
                 ''')
                 sessions = [row['session_id'] for row in cursor.fetchall()]
                 sessions.reverse()  # Reverse to get chronological order (oldest to newest)
