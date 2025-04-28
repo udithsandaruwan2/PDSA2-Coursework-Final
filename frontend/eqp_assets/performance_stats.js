@@ -1,7 +1,17 @@
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('Loading performance_stats.js...');
+
     const renderCharts = (data) => {
-        // Bar Chart
-        const barCtx = document.getElementById('barChart').getContext('2d');
+        console.log('Rendering charts with data:', data);
+
+        const barCtx = document.getElementById('barChart')?.getContext('2d');
+        const lineCtx = document.getElementById('lineChart')?.getContext('2d');
+
+        if (!barCtx || !lineCtx) {
+            console.error('Canvas elements #barChart or #lineChart not found.');
+            return;
+        }
+
         new Chart(barCtx, {
             type: 'bar',
             data: {
@@ -66,8 +76,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Line Chart
-        const lineCtx = document.getElementById('lineChart').getContext('2d');
         new Chart(lineCtx, {
             type: 'line',
             data: {
@@ -136,10 +144,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     try {
+        console.log('Fetching performance stats from /api/eight_queens/get_performance_stats...');
         const response = await fetch('http://localhost:5000/api/eight_queens/get_performance_stats');
         const data = await response.json();
+        console.log('Performance stats response:', data);
 
         if (!data.success) {
+            console.error('Error fetching performance statistics:', data.message || 'Unknown error');
             alert('Error fetching performance statistics: ' + (data.message || 'Unknown error'));
             return;
         }

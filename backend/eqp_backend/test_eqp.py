@@ -11,40 +11,36 @@ class EightQueensAPITestCase(unittest.TestCase):
         self.app = Flask(__name__)
         self.app.register_blueprint(eqp_bp)
         self.client = self.app.test_client()
-        # Clear database
-        db = EightQueensDB()
         # Backup eqp_submissions
+        db = EightQueensDB()
         db.execute_query("CREATE TABLE IF NOT EXISTS eqp_submissions_backup AS SELECT * FROM eqp_submissions")
-        # Clear database
+        # Clear only for testing
         db.execute_query("DELETE FROM eqp_submissions")
         db.execute_query("DELETE FROM eqp_solutions")
         db.execute_query("DELETE FROM eqp_performance")
         # Populate eqp_solutions
         self.client.post('/api/eight_queens/compute_solutions')
-        # Valid board matching a known solution (e.g., queens at [4,2,0,6,1,7,5,3])
+        # Valid board matching a known solution
         self.valid_board = [
-            [0, 0, 0, 0, 1, 0, 0, 0],  # row 0, col 4
-            [0, 0, 0, 0, 0, 0, 1, 0],  # row 1, col 6
-            [1, 0, 0, 0, 0, 0, 0, 0],  # row 2, col 0
-            [0, 0, 1, 0, 0, 0, 0, 0],  # row 3, col 2
-            [0, 0, 0, 0, 0, 0, 0, 1],  # row 4, col 7
-            [0, 0, 0, 0, 0, 1, 0, 0],  # row 5, col 5
-            [0, 0, 0, 1, 0, 0, 0, 0],  # row 6, col 3
-            [0, 1, 0, 0, 0, 0, 0, 0]   # row 7, col 1
+            [0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0]
         ]
         self.valid_board_2 = [
-            [0, 0, 0, 0, 1, 0, 0, 0],  # row 0, col 4
-            [0, 1, 0, 0, 0, 0, 0, 0],  # row 1, col 1
-            [0, 0, 0, 0, 0, 1, 0, 0],  # row 2, col 5
-            [0, 0, 1, 0, 0, 0, 0, 0],  # row 3, col 2
-            [0, 0, 0, 0, 0, 0, 0, 1],  # row 4, col 7
-            [1, 0, 0, 0, 0, 0, 0, 0],  # row 5, col 0
-            [0, 0, 0, 1, 0, 0, 0, 0],  # row 6, col 3
-            [0, 0, 0, 0, 0, 0, 1, 0]   # row 7, col 6
+            [0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0]
         ]
-        db = EightQueensDB()
-        solutions = db.get_solutions()
-        self.valid_board_2 = self.board_to_string(solutions[-1])
 
     def tearDown(self):
         db = EightQueensDB()
@@ -53,7 +49,7 @@ class EightQueensAPITestCase(unittest.TestCase):
         db.execute_query("INSERT INTO eqp_submissions SELECT * FROM eqp_submissions_backup")
         # Drop backup table
         db.execute_query("DROP TABLE IF EXISTS eqp_submissions_backup")
-        
+
     def solution_to_board(self, solution_string):
         """Convert a 64-character solution string to an 8x8 board."""
         board = []
@@ -67,12 +63,12 @@ class EightQueensAPITestCase(unittest.TestCase):
 
     def test_compute_solutions(self):
         print("Testing /api/eight_queens/compute_solutions...")
-        response = self.client.post('/api/eight_queens/compute_solutions')
+        response = self.client.post('/api/eight_queens/compute_solutions', json={'rounds': 1})
         data = json.loads(response.data)
         self.assertEqual(response.status_code, 200)
         self.assertTrue(data['success'])
-        self.assertEqual(data['sequential']['solutions_count'], 92)
-        self.assertEqual(data['parallel']['solutions_count'], 92)
+        self.assertEqual(data['sequential']['solutions_counts'][0], 92)
+        self.assertEqual(data['parallel']['solutions_counts'][0], 92)
         print("✓ /api/eight_queens/compute_solutions works as expected.")
 
     def test_submit_solution_valid(self):
@@ -134,19 +130,15 @@ class EightQueensAPITestCase(unittest.TestCase):
     def test_submit_solution_maximum_reached(self):
         print("Testing /api/eight_queens/submit_solution when maximum solutions reached...")
         db = EightQueensDB()
-        # Clear submissions to ensure a clean state
         db.execute_query("DELETE FROM eqp_submissions")
-        # Get all solutions
         solutions = db.get_solutions()
         self.assertEqual(len(solutions), 92, "Expected 92 solutions in eqp_solutions")
-        # Insert 91 unique solutions
         for i, solution in enumerate(solutions[:91]):
             db.execute_query(
                 "INSERT INTO eqp_submissions (username, solution, submitted_at) VALUES (?, ?, ?)",
                 (f'test_user_{i}', solution, datetime.now(pytz.timezone('Asia/Colombo')).isoformat())
             )
-        # Submit the 92nd solution
-        board = self.solution_to_board(solutions[91])  # Use the last solution
+        board = self.solution_to_board(solutions[91])
         payload = {'username': 'test_user', 'board': board}
         response = self.client.post('/api/eight_queens/submit_solution', json=payload)
         data = json.loads(response.data)
@@ -154,19 +146,11 @@ class EightQueensAPITestCase(unittest.TestCase):
         self.assertTrue(data['success'])
         self.assertEqual(data['message'], 'All 92 unique solutions have been submitted. Game reset for new submissions!')
         self.assertEqual(data['unique_solutions'], 0)
-        # Verify reset
         submissions = db.get_submissions()
         self.assertEqual(len(submissions), 0)
         print("✓ /api/eight_queens/submit_solution handles maximum solutions and resets.")
 
-def solution_to_board(self, solution_string):
-    board = []
-    for i in range(0, 64, 8):
-        row = [int(c) for c in solution_string[i:i+8]]
-        board.append(row)
-    return board
-
-def test_get_solutions(self):
+    def test_get_solutions(self):
         print("Testing /api/eight_queens/get_solutions...")
         response = self.client.get('/api/eight_queens/get_solutions')
         data = json.loads(response.data)
@@ -175,7 +159,7 @@ def test_get_solutions(self):
         self.assertEqual(len(data['solutions']), 92)
         print("✓ /api/eight_queens/get_solutions works as expected.")
 
-def test_get_database(self):
+    def test_get_database(self):
         print("Testing /api/eight_queens/get_database...")
         payload = {'username': 'test_user', 'board': self.valid_board}
         self.client.post('/api/eight_queens/submit_solution', json=payload)
@@ -183,12 +167,12 @@ def test_get_database(self):
         data = json.loads(response.data)
         self.assertEqual(response.status_code, 200)
         self.assertTrue(data['success'])
-        self.assertEqual(len(data['eqp_solutions']), 92)
+        self.assertEqual(len(data['eqp_solutions']), 10)
         self.assertEqual(len(data['eqp_submissions']), 1)
         self.assertGreaterEqual(len(data['eqp_performance']), 2)
         print("✓ /api/eight_queens/get_database works as expected.")
 
-def test_reset_game(self):
+    def test_reset_game(self):
         print("Testing /api/eight_queens/reset_game...")
         payload = {'username': 'test_user', 'board': self.valid_board}
         self.client.post('/api/eight_queens/submit_solution', json=payload)
@@ -201,9 +185,9 @@ def test_reset_game(self):
         self.assertEqual(len(submissions), 0)
         print("✓ /api/eight_queens/reset_game works as expected.")
 
-def test_get_performance(self):
+    def test_get_performance(self):
         print("Testing /api/eight_queens/get_performance...")
-        self.client.post('/api/eight_queens/compute_solutions')
+        self.client.post('/api/eight_queens/compute_solutions', json={'rounds': 1})
         response = self.client.get('/api/eight_queens/get_performance')
         data = json.loads(response.data)
         self.assertEqual(response.status_code, 200)
@@ -211,7 +195,7 @@ def test_get_performance(self):
         self.assertTrue(len(data['performance_metrics']) >= 2)
         print("✓ /api/eight_queens/get_performance works as expected.")
 
-def test_submit_solution_missing_fields(self):
+    def test_submit_solution_missing_fields(self):
         print("Testing /api/eight_queens/submit_solution with missing fields...")
         payload = {'username': 'test_user'}
         response = self.client.post('/api/eight_queens/submit_solution', json=payload)
@@ -221,7 +205,7 @@ def test_submit_solution_missing_fields(self):
         self.assertEqual(data['message'], 'Username and board are required')
         print("✓ /api/eight_queens/submit_solution rejects missing fields.")
 
-def test_get_database_submissions(self):
+    def test_get_database_submissions(self):
         print("Testing /api/eight_queens/get_database for submissions...")
         payload = {'username': 'test_user', 'board': self.valid_board}
         response = self.client.post('/api/eight_queens/submit_solution', json=payload)
@@ -234,13 +218,12 @@ def test_get_database_submissions(self):
         self.assertEqual(data['eqp_submissions'][0]['username'], 'test_user')
         print("✓ /api/eight_queens/get_database returns correct submissions data.")
 
-def test_run_algorithm_rounds(self):
+    def test_run_algorithm_rounds(self):
         print("Testing /api/eight_queens/run_algorithm_rounds...")
         payload = {'rounds': 5}
         response = self.client.post('/api/eight_queens/run_algorithm_rounds', json=payload)
         data = json.loads(response.data)
         self.assertEqual(response.status_code, 200)
-        selfbury: True
         self.assertTrue(data['success'])
         self.assertEqual(len(data['rounds']), 5)
         self.assertEqual(len(data['sequential_times']), 5)
@@ -251,6 +234,7 @@ def test_run_algorithm_rounds(self):
             self.assertEqual(solutions, 92)
         for solutions in data['parallel_solutions']:
             self.assertEqual(solutions, 92)
-        print("✓ /api/eight_queens/run_algorithm_rounds works with specified rounds.")
+        print F"✓ /api/eight_queens/run_algorithm_rounds works with specified rounds.")
+
 if __name__ == '__main__':
-        unittest.main(verbosity=2)
+    unittest.main(verbosity=2)

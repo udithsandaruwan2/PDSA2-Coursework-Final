@@ -56,7 +56,7 @@ class EightQueensDB:
                 cursor.execute("SELECT COUNT(*) FROM eqp_solutions")
                 count = cursor.fetchone()[0]
                 if count == 0:
-                    from .eqp_routes import QueensSolver  # Moved inside to avoid circular import
+                    from .eqp_routes import QueensSolver
                     solver = QueensSolver()
                     solver.solve_sequential()
                     solutions = solver.get_solutions()
@@ -93,9 +93,8 @@ class EightQueensDB:
     def save_solutions(self, solutions):
         """Save precomputed solutions to the database."""
         try:
-            self.execute_query("DELETE FROM eqp_solutions")  # Clear existing solutions
             for solution in solutions:
-                self.execute_query("INSERT INTO eqp_solutions (solution) VALUES (?)", (solution,))
+                self.execute_query("INSERT OR IGNORE INTO eqp_solutions (solution) VALUES (?)", (solution,))
             logger.info(f"Saved {len(solutions)} solutions to the database.")
         except sqlite3.Error as e:
             logger.error(f"Error saving solutions: {e}")
@@ -104,7 +103,7 @@ class EightQueensDB:
     def get_solutions(self):
         """Retrieve all precomputed solutions."""
         try:
-            results = self.execute_query("SELECT solution FROM eqp_solutions")
+            results = self.execute_query("SELECT solution FROM eqp_solutions ORDER BY id DESC")
             return [row[0] for row in results]
         except sqlite3.Error as e:
             logger.error(f"Error retrieving solutions: {e}")
@@ -125,7 +124,7 @@ class EightQueensDB:
     def get_submissions(self):
         """Retrieve all player submissions."""
         try:
-            results = self.execute_query("SELECT username, solution FROM eqp_submissions")
+            results = self.execute_query("SELECT username, solution FROM eqp_submissions ORDER BY submitted_at DESC")
             return [{'username': row[0], 'solution': row[1]} for row in results]
         except sqlite3.Error as e:
             logger.error(f"Error retrieving submissions: {e}")
@@ -159,12 +158,13 @@ class EightQueensDB:
     def get_performance(self):
         """Retrieve all performance metrics."""
         try:
-            results = self.execute_query("SELECT algorithm_type, execution_time, total_solutions FROM eqp_performance")
+            results = self.execute_query("SELECT algorithm_type, execution_time, total_solutions, recorded_at FROM eqp_performance ORDER BY recorded_at DESC")
             return [
                 {
                     'algorithm_type': row[0],
                     'execution_time': row[1],
-                    'total_solutions': row[2]
+                    'total_solutions': row[2],
+                    'recorded_at': row[3]
                 }
                 for row in results
             ]

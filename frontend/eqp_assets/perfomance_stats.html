@@ -22,19 +22,10 @@
             flex: 1;
             min-width: 400px;
         }
-        .button {
-            background-color: #2b6cb0;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
         .note {
             margin-top: 15px;
             font-size: 14px;
-                         color: #555;
+            color: #555;
         }
         .back-link {
             display: inline-block;
@@ -65,7 +56,7 @@
                 <h3>Line Chart</h3>
                 <canvas id="lineChart" width="400" height="300"></canvas>
             </div>
-            <p class="note">Note: Showing execution times for the most recent runs. Times are in seconds.</p>
+            <p class="note">Note: Showing execution times for the most recent 10 runs, ordered with the most recent last. Times are in seconds.</p>
         </div>
     </div>
     <script src="performance_stats.js"></script>

@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <manent charset="UTF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Eight Queens Puzzle</title>
     <link rel="stylesheet" href="eqp_assets/eight_queens.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -44,11 +45,11 @@
             <button id="undoBtn" aria-label="Undo last queen placement">Undo Move</button>
             <button id="resetBtn" aria-label="Reset the chessboard">Reset Board</button>
             <button id="viewDbBtn" aria-label="View database contents">View Database</button>
-            <button id="computeBtn" aria-label="Compute all Eight Queens solutions">Compute Solutions</button>
             <div>
                 <label for="roundsInput">Rounds:</label>
-                <input type="number" id="roundsInput" min="1" placeholder="Enter number of rounds" aria-label="Enter number of rounds">
+                <input type="number" id="roundsInput" min="1" value="1" placeholder="Enter number of rounds" aria-label="Enter number of rounds">
             </div>
+            <button id="computeBtn" aria-label="Compute all Eight Queens solutions">Compute Solutions</button>
             <button id="viewStatsBtn" aria-label="View performance statistics">View Performance Stats</button>
             <button id="viewPlayerStatsBtn" aria-label="View player statistics">View Player Stats</button>
         </div>
@@ -65,10 +66,9 @@
         </div>
 
         <footer>
-            <p>Developed by [Your Name]</p>
+            <p>Developed by Team</p>
         </footer>
     </div>
     <script src="eqp_assets/eight_queens.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 </body>
 </html>
