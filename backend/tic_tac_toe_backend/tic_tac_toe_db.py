@@ -236,32 +236,30 @@ class TicTacToeDatabase:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
 
-                # Step 1: Get last 10 unique session IDs ordered by latest timestamp
-                cursor.execute('''
-                    SELECT DISTINCT session_id
-                    FROM ai_move_logs
-                    ORDER BY timestamp DESC
-                    LIMIT 20
-                ''')
-                sessions = [row['session_id'] for row in cursor.fetchall()]
-                sessions.reverse()  # Reverse to get chronological order (oldest to newest)
-
-                # Step 2: For each session, get avg duration per algorithm
                 performance = {'minimax': [], 'mcts': []}
 
-                for session_id in sessions:
+                for algo in ['minimax', 'mcts']:
+                    # Step 1: Get latest 10 session_ids for this algorithm
                     cursor.execute('''
-                        SELECT algorithm, AVG(duration_ms) as avg_duration
+                        SELECT DISTINCT session_id
                         FROM ai_move_logs
-                        WHERE session_id = ?
-                        GROUP BY algorithm
-                    ''', (session_id,))
-                    rows = cursor.fetchall()
+                        WHERE LOWER(algorithm) = ?
+                        ORDER BY timestamp DESC
+                        LIMIT 10
+                    ''', (algo,))
+                    sessions = [row['session_id'] for row in cursor.fetchall()]
+                    sessions.reverse()  # oldest to newest
 
-                    for row in rows:
-                        algo = row['algorithm'].lower()
-                        if algo in performance:
-                            performance[algo].append(round(row['avg_duration'], 2))  # Round for frontend display
+                    # Step 2: For each session, get average move duration
+                    for session_id in sessions:
+                        cursor.execute('''
+                            SELECT AVG(duration_ms) as avg_duration
+                            FROM ai_move_logs
+                            WHERE session_id = ? AND LOWER(algorithm) = ?
+                        ''', (session_id, algo))
+                        row = cursor.fetchone()
+                        if row and row['avg_duration'] is not None:
+                            performance[algo].append(round(row['avg_duration'], 2))
 
                 return {'success': True, 'metrics': performance}
 
