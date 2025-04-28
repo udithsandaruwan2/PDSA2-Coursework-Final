@@ -6,15 +6,20 @@ import json
 
 logger = logging.getLogger(__name__)
 
+# Get the absolute path to the script's directory
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Navigate to the intended database directory
+db_dir = os.path.abspath(os.path.join(script_dir, '..', '..', 'database'))
 # Ensure the database directory exists
-os.makedirs('../../database', exist_ok=True)
+os.makedirs(db_dir, exist_ok=True)
+
 
 @contextmanager
 def get_db_connection():
     """Context manager for database connections"""
     conn = None
     try:
-        db_path = os.path.abspath('../../database/tower_of_hanoi.db')
+        db_path = os.path.join(db_dir, 'tower_of_hanoi.db')
         logger.debug(f"Connecting to database at: {db_path}")
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
