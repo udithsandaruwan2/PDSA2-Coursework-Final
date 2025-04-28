@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 # Get the absolute path to the script's directory
 script_dir = os.path.dirname(os.path.abspath(__file__))
 # Navigate to the intended database directory
-db_dir = os.path.abspath(os.path.join(script_dir, '..', '..', 'database'))
+db_dir = os.path.abspath(os.path.join(script_dir,'..', 'database'))
 # Ensure the database directory exists
 os.makedirs(db_dir, exist_ok=True)
 
