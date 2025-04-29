@@ -31,6 +31,38 @@ const pathVisible = {
     hk: false
 };
 
+// Loading screen functions
+function showLoadingScreen() {
+    const loadingScreen = document.getElementById("loadingScreen");
+    if (loadingScreen) {
+        loadingScreen.classList.add("active");
+    }
+}
+
+function hideLoadingScreen() {
+    const loadingScreen = document.getElementById("loadingScreen");
+    if (loadingScreen) {
+        loadingScreen.classList.remove("active");
+    }
+}
+
+// Algorithm loading modal functions
+function showAlgorithmLoadingModal() {
+    const algorithmLoadingModal = document.getElementById("algorithmLoadingModal");
+    if (algorithmLoadingModal) {
+        algorithmLoadingModal.style.display = "flex";
+        algorithmLoadingModal.classList.add("active");
+    }
+}
+
+function hideAlgorithmLoadingModal() {
+    const algorithmLoadingModal = document.getElementById("algorithmLoadingModal");
+    if (algorithmLoadingModal) {
+        algorithmLoadingModal.style.display = "none";
+        algorithmLoadingModal.classList.remove("active");
+    }
+}
+
 function getHomeChar() {
     return String.fromCharCode(65 + homeCityIndex);
 }
@@ -55,6 +87,7 @@ function generateCities() {
         .then(data => {
             if (!data || !data.cities || !data.distances) {
                 console.error("Invalid city data:", data);
+                hideLoadingScreen();
                 return;
             }
 
@@ -131,11 +164,15 @@ function generateCities() {
             document.getElementById("bbCard").classList.remove("path-active");
             document.getElementById("hkCard").classList.remove("path-active");
 
-            drawCities();
+            setTimeout(() => {
+                drawCities();
+                hideLoadingScreen();
+            }, 1000);
         })
         .catch(err => {
             console.error("Error generating cities:", err);
             alert("Failed to load city data. Please try again.");
+            hideLoadingScreen();
         });
 }
 
@@ -361,6 +398,8 @@ function compareWithAlgorithms() {
         return;
     }
 
+    showAlgorithmLoadingModal();
+
     const homeCityObj = cities[homeCityIndex];
     const selectedCityIds = playerRoute.map(city => city.id);
     const selectedCities = cities.filter(city => selectedCityIds.includes(city.id));
@@ -385,6 +424,7 @@ function compareWithAlgorithms() {
         return response.json();
     })
     .then(data => {
+        hideAlgorithmLoadingModal();
         console.log("API response:", data);
         const idToCity = (c) => typeof c === 'object' ? cities.find(city => city.id === c.id) : cities.find(city => city.id === c);
 
@@ -459,30 +499,36 @@ function compareWithAlgorithms() {
         const bbDistance = data.branch_bound.distance != null ? parseFloat(data.branch_bound.distance).toFixed(1) : "N/A";
         const hkDistance = data.held_karp.distance != null ? parseFloat(data.held_karp.distance).toFixed(1) : "N/A";
 
-        let resultMessage = "";
-        if (humanDistance <= nnDistance && humanDistance <= bbDistance && humanDistance <= hkDistance) {
-            resultMessage = humanDistance < nnDistance || humanDistance < bbDistance || humanDistance < hkDistance
-                ? "Congratulations! You found the shortest route!"
-                : "Congratulations! You matched the best algorithm route!";
-            saveWinToDatabase(data, humanDistance, selectedCityChars);
-        } else {
-            resultMessage = "Nice try! The algorithm found a shorter route.";
-            saveGameSessionToDatabase(data, selectedCityChars);
-        }
+    let resultMessage = "";
+    const humanDistanceNum = parseFloat(humanDistance);
+    const bestAlgorithmDistance = Math.min(
+        parseFloat(nnDistance) || Infinity,
+        parseFloat(bbDistance) || Infinity,
+        parseFloat(hkDistance) || Infinity
+    );
 
-        // Display the result in the modal
-        const resultModalMessage = document.getElementById("resultModalMessage");
-        const resultModal = document.getElementById("resultModal");
-        if (resultModalMessage && resultModal) {
-            resultModalMessage.innerText = resultMessage;
-            resultModal.style.display = "flex";
-        } else {
-            console.warn("Modal elements not found in DOM");
-        }
+    if (humanDistanceNum <= bestAlgorithmDistance) {
+        resultMessage = "Congratulations! You found the shortest route!";
+        saveWinToDatabase(data, humanDistance, selectedCityChars);
+    } else {
+        resultMessage = "Nice try! The algorithm found a shorter route.";
+        saveGameSessionToDatabase(data, selectedCityChars);
+    }
 
-        drawCities();
-    })
+    // Display the result in the modal
+    const resultModalMessage = document.getElementById("resultModalMessage");
+    const resultModal = document.getElementById("resultModal");
+    if (resultModalMessage && resultModal) {
+        resultModalMessage.innerText = resultMessage;
+        resultModal.style.display = "flex";
+    } else {
+        console.warn("Modal elements not found in DOM");
+    }
+
+    drawCities();
+})
     .catch(error => {
+        hideAlgorithmLoadingModal();
         console.error('Error during algorithm comparison:', error);
         alert('Error comparing algorithms. Check the console for more details.');
     });
@@ -662,7 +708,10 @@ function resetGame() {
         hkCard.classList.add("hidden-result");
     }
 
-    setTimeout(generateCities, 50);
+    showLoadingScreen();
+    setTimeout(() => {
+        generateCities();
+    }, 1000); // 1-second delay before generating cities
 }
 
 function stopGame() {
@@ -733,7 +782,6 @@ function setupCardListeners() {
     });
 }
 
-
 function viewAlgorithmStats() {
     window.open('tsp_assets/algorithm_stats.html', '_blank');
 }
@@ -741,6 +789,7 @@ function viewAlgorithmStats() {
 document.addEventListener("DOMContentLoaded", () => {
     console.log("DOM fully loaded. Initializing game...");
     playerName = prompt("Please enter your name:", "Anonymous") || "Anonymous";
+    showLoadingScreen();
     generateCities();
     addDatabaseViewerLink();
     setupCardListeners();
@@ -755,7 +804,7 @@ function viewCityDistances() {
 
     const tableDiv = document.getElementById('statsContent');
     let html = "<h2>City Distance Table</h2>";
-    html += "<table class='distance-table' style='border-collapse: collapse; width: 100%; text-align: center;'>";
+    html += "<table class='stats-table' style='border-collapse: collapse; width: 100%; text-align: center;'>";
 
     html += "<tr><th>City</th>";
     for (let i = 0; i < cities.length; i++) {

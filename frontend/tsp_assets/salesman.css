@@ -269,13 +269,13 @@ button:nth-child(5):hover {
 
 .stats-table th,
 .stats-table td {
-    padding: 1rem 1.25rem;
+    padding: 0.1rem 0.25rem;
     text-align: center;
 }
 
 .stats-table th {
-    background: linear-gradient(135deg, #4facfe, #00f2fe);
-    color: #ffffff;
+    background: linear-gradient(135deg, #ececec, #d6dddd);
+    color: #000000;
     font-weight: 600;
     letter-spacing: 0.3px;
     font-size: 1rem;
@@ -411,6 +411,67 @@ button:nth-child(5):hover {
     box-shadow: 0 2px 8px rgba(79, 172, 254, 0.3);
 }
 
+/* Loading Screen */
+.loading-screen {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    backdrop-filter: blur(4px);
+}
+
+.loading-screen.active {
+    display: flex;
+}
+
+.loading-screen p {
+    color: #ffffff;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-top: 1rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Algorithm Loading Modal */
+.loading-modal {
+    z-index: 1500;
+}
+
+.loading-modal-content {
+    max-width: 350px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(135deg, #ffffff, #f0f5ff);
+}
+
+.loading-modal-content p {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-top: 1rem;
+}
+
+/* Spinner Animation */
+.spinner {
+    border: 6px solid #e2e8f0;
+    border-top: 6px solid #4facfe;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 /* Responsive styles */
 @media (max-width: 992px) {
     body {
@@ -518,6 +579,17 @@ button:nth-child(5):hover {
     .modal-close-btn {
         padding: 0.625rem 1.25rem;
         font-size: 0.9rem;
+    }
+    
+    .loading-screen p,
+    .loading-modal-content p {
+        font-size: 1.125rem;
+    }
+    
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border-width: 5px;
     }
 }
 
