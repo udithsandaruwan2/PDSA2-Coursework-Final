@@ -111,9 +111,6 @@ class SalesmanAPITestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         print("✓ /api/solve_tsp correctly handles missing input.")
 
-
-
-
 if __name__ == "__main__":
     unittest.main()
 

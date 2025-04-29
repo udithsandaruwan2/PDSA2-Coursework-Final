@@ -7,6 +7,26 @@ if (!ctx) {
     alert("Your browser doesn't support canvas operations!");
 }
 
+// Preload city icons
+const cityIcon = new Image();
+cityIcon.src = 'tsp_assets/city-icon.png';
+const homeCityIcon = new Image();
+homeCityIcon.src = 'tsp_assets/home-city-icon.png';
+
+// Icon dimensions (assumed 20x20 pixels)
+const iconWidth = 25;
+const iconHeight = 25;
+
+// Check if icons loaded successfully
+cityIcon.onerror = () => {
+    console.error("Failed to load city icon");
+    alert("Could not load city icon. Using default rendering.");
+};
+homeCityIcon.onerror = () => {
+    console.error("Failed to load home city icon");
+    alert("Could not load home city icon. Using default rendering.");
+};
+
 let cities = [];
 let playerRoute = [];
 let nnRoute = [];
@@ -18,7 +38,6 @@ let playerPathSegments = [];
 let playerName = "Anonymous";
 let homeCity = "Unknown";
 
-const cityRadius = 8;
 const numCities = 10;
 let humanDistanceInKm = 0;
 let homeCityIndex = Math.floor(Math.random() * numCities);
@@ -208,16 +227,27 @@ function drawCities() {
     ctx.restore();
 
     cities.forEach(city => {
-        ctx.beginPath();
-        ctx.arc(city.x, city.y, cityRadius, 0, Math.PI * 2);
-        ctx.fillStyle = city.id === homeCityIndex ? "#ff0000" : "#ff4136";
-        ctx.fill();
-        ctx.stroke();
+        // Draw city icon (centered at city.x, city.y)
+        const icon = city.id === homeCityIndex ? homeCityIcon : cityIcon;
+        const x = city.x - iconWidth / 2; // Center the icon
+        const y = city.y - iconHeight / 2;
+        if (icon.complete && icon.naturalWidth !== 0) {
+            ctx.drawImage(icon, x, y, iconWidth, iconHeight);
+        } else {
+            // Fallback to circle if icon fails to load
+            ctx.beginPath();
+            ctx.arc(city.x, city.y, 8, 0, Math.PI * 2);
+            ctx.fillStyle = city.id === homeCityIndex ? "#ff0000" : "#ff4136";
+            ctx.fill();
+            ctx.stroke();
+        }
 
+        // Draw labels
         const label = String.fromCharCode(65 + city.id);
         ctx.fillStyle = "black";
-        ctx.fillText(label, city.x + 10, city.y);
-        if (city.id === homeCityIndex) ctx.fillText("Home", city.x - 10, city.y + 20);
+        ctx.font = "12px Arial";
+        ctx.fillText(label, city.x + 15, city.y); // Adjusted offset for icon size
+        if (city.id === homeCityIndex) ctx.fillText("Home", city.x - 15, city.y + 25);
     });
 
     if (pathVisible.nn && nnRoute.length > 1) {
@@ -279,9 +309,12 @@ canvas.addEventListener("click", (event) => {
     const mouseY = event.clientY - rect.top;
 
     for (let city of cities) {
-        const dx = city.x - mouseX;
-        const dy = city.y - mouseY;
-        if (Math.sqrt(dx * dx + dy * dy) < cityRadius * 2) {
+        // Check if click is within the icon's rectangular hitbox
+        const xLeft = city.x - iconWidth / 2;
+        const xRight = city.x + iconWidth / 2;
+        const yTop = city.y - iconHeight / 2;
+        const yBottom = city.y + iconHeight / 2;
+        if (mouseX >= xLeft && mouseX <= xRight && mouseY >= yTop && mouseY <= yBottom) {
             console.log(`Clicked on city with id: ${city.id}`);
 
             if (city.id === homeCityIndex) {
@@ -499,34 +532,34 @@ function compareWithAlgorithms() {
         const bbDistance = data.branch_bound.distance != null ? parseFloat(data.branch_bound.distance).toFixed(1) : "N/A";
         const hkDistance = data.held_karp.distance != null ? parseFloat(data.held_karp.distance).toFixed(1) : "N/A";
 
-    let resultMessage = "";
-    const humanDistanceNum = parseFloat(humanDistance);
-    const bestAlgorithmDistance = Math.min(
-        parseFloat(nnDistance) || Infinity,
-        parseFloat(bbDistance) || Infinity,
-        parseFloat(hkDistance) || Infinity
-    );
+        let resultMessage = "";
+        const humanDistanceNum = parseFloat(humanDistance);
+        const bestAlgorithmDistance = Math.min(
+            parseFloat(nnDistance) || Infinity,
+            parseFloat(bbDistance) || Infinity,
+            parseFloat(hkDistance) || Infinity
+        );
 
-    if (humanDistanceNum <= bestAlgorithmDistance) {
-        resultMessage = "Congratulations! You found the shortest route!";
-        saveWinToDatabase(data, humanDistance, selectedCityChars);
-    } else {
-        resultMessage = "Nice try! The algorithm found a shorter route.";
-        saveGameSessionToDatabase(data, selectedCityChars);
-    }
+        if (humanDistanceNum <= bestAlgorithmDistance) {
+            resultMessage = "Congratulations! You found the shortest route!";
+            saveWinToDatabase(data, humanDistance, selectedCityChars);
+        } else {
+            resultMessage = "Nice try! The algorithm found a shorter route.";
+            saveGameSessionToDatabase(data, selectedCityChars);
+        }
 
-    // Display the result in the modal
-    const resultModalMessage = document.getElementById("resultModalMessage");
-    const resultModal = document.getElementById("resultModal");
-    if (resultModalMessage && resultModal) {
-        resultModalMessage.innerText = resultMessage;
-        resultModal.style.display = "flex";
-    } else {
-        console.warn("Modal elements not found in DOM");
-    }
+        // Display the result in the modal
+        const resultModalMessage = document.getElementById("resultModalMessage");
+        const resultModal = document.getElementById("resultModal");
+        if (resultModalMessage && resultModal) {
+            resultModalMessage.innerText = resultMessage;
+            resultModal.style.display = "flex";
+        } else {
+            console.warn("Modal elements not found in DOM");
+        }
 
-    drawCities();
-})
+        drawCities();
+    })
     .catch(error => {
         hideAlgorithmLoadingModal();
         console.error('Error during algorithm comparison:', error);
