@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eight Queens Player Statistics</title>
+    <link rel="stylesheet" href="eight_queens.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        #chartContainer {
+            max-width: 900px;
+            margin: 30px auto;
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .note {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Player Performance Statistics</h1>
+        <a href="../eight_queens.html" class="back-link">Back to Game</a>
+        <div id="chartContainer">
+            <canvas id="playerChart" width="800" height="400"></canvas>
+            <p class="note">Note: Showing the top 10 players by number of correct solutions submitted.</p>
+        </div>
+    </div>
+    <script src="player_stats.js"></script>
+</body>
+</html>

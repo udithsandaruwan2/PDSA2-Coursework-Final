@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eight Queens Database Table</title>
+    <link rel="stylesheet" href="eight_queens.css">
+    <style>
+        .table-container {
+            max-width: 1200px;
+            margin: 30px auto;
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .stats-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .stats-table th,
+        .stats-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .stats-table th {
+            background: linear-gradient(135deg, #2b6cb0, #2c5282);
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .stats-table tr:nth-child(even) {
+            background-color: #f7fafc;
+        }
+        .stats-table tr:hover td {
+            background-color: #edf2f7;
+        }
+        .back-link {
+            display: inline-block;
+            margin: 20px 0;
+            font-size: 16px;
+            color: #2b6cb0;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            background-color: rgba(43, 108, 176, 0.1);
+        }
+        .back-link:hover {
+            color: #1a4971;
+            background-color: rgba(43, 108, 176, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Eight Queens Database Table</h1>
+        <a href="../eight_queens.html" class="back-link">Back to Game</a>
+        <div class="table-container">
+            <h2 id="tableTitle"></h2>
+            <table class="stats-table" id="dataTable">
+                <thead id="tableHead"></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+    <script src="view_table.js"></script>
+</body>
+</html>

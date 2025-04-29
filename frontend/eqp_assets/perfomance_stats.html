@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eight Queens Performance Statistics</title>
+    <link rel="stylesheet" href="eight_queens.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        #chartContainer {
+            max-width: 1200px;
+            margin: 30px auto;
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .chart-wrapper {
+            flex: 1;
+            min-width: 400px;
+        }
+        .note {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #555;
+        }
+        .back-link {
+            display: inline-block;
+            margin: 20px 0;
+            font-size: 16px;
+            color: #2b6cb0;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            background-color: rgba(54, 113, 176, 0.1);
+        }
+        .back-link:hover {
+            color: #1a4971;
+            background-color: rgba(43, 108, 176, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Algorithm Performance Statistics</h1>
+        <a href="../eight_queens.html" class="back-link">Back to Game</a>
+        <div id="chartContainer">
+            <div class="chart-wrapper">
+                <h3>Bar Chart</h3>
+                <canvas id="barChart" width="400" height="300"></canvas>
+            </div>
+            <div class="chart-wrapper">
+                <h3>Line Chart</h3>
+                <canvas id="lineChart" width="400" height="300"></canvas>
+            </div>
+            <p class="note">Note: Showing execution times for the most recent 10 runs, ordered with the most recent last. Times are in seconds.</p>
+        </div>
+    </div>
+    <script src="performance_stats.js"></script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travelling Salesman Problem Game</title>
+    <link rel="stylesheet" href="tsp_assets/salesman.css">
+</head>
+<body>
+    <div id="gameContainer">
+        <h1>Travelling Salesman Game</h1>
+        <div id="homeCityInfo">
+            <p id="homeCity">Home City: N/A</p>
+        </div>
+        <canvas id="cityCanvas" width="800" height="500"></canvas>
+        <div id="controls">
+            <button onclick="resetGame()">Reset</button>
+            <button onclick="submitRoute()">Submit Route</button>
+            <button onclick="compareWithAlgorithms()">Compare with Algorithms</button>
+            <button onclick="viewCityDistances()">View Distances</button>
+            <button onclick="viewAlgorithmStats()">Algorithm Statistics</button>
+        </div>
+        <div id="resultCards">
+            <div class="result-card" id="humanCard">
+                <h3>Human</h3>
+                <p>Distance: <span id="humanDistance">N/A</span></p>
+                <p>Time: <span>0.00 ms</span></p>
+            </div>
+            <div class="result-card hidden-result" id="nnCard">
+                <h3>Nearest Neighbor</h3>
+                <p>Distance: <span id="nnDistance">N/A</span></p>
+                <p>Time: <span id="nnTime">N/A</span></p>
+            </div>
+            <div class="result-card hidden-result" id="bbCard">
+                <h3>Branch and Bound</h3>
+                <p>Distance: <span id="bbDistance">N/A</span></p>
+                <p>Time: <span id="bbTime">N/A</span></p>
+            </div>
+            <div class="result-card hidden-result" id="hkCard">
+                <h3>Held-Karp</h3>
+                <p>Distance: <span id="hkDistance">N/A</span></p>
+                <p>Time: <span id="hkTime">N/A</span></p>
+            </div>
+        </div>
+        <div id="statsResult">
+            <div id="statsContent"></div>
+        </div>
+        <div id="content"></div>
+    </div>
+
+    <!-- Modal for result message -->
+    <div id="resultModal" class="modal">
+        <div class="modal-content">
+            <span id="resultModalMessage"></span>
+            <button id="closeModal" class="modal-close-btn">Close</button>
+        </div>
+    </div>
+
+    <script src="tsp_assets/salesman.js"></script>
+</body>
+</html>

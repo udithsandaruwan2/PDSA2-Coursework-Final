@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Menu</title>
+    <link rel="stylesheet" href="home_assets/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Game Arena</h1>
+        
+        <div class="game-tiles">
+            <div class="game-tile" onclick="startGame('tic_tac_toe')">
+                <img src="images\tic-tac-toe.png" alt="Tic-Tac-Toe">
+                <h2>Tic-Tac-Toe</h2>
+            </div>
+            <div class="game-tile" onclick="startGame('salesman_problem')">
+                <img src="images/salesman.png" alt="Traveling Salesman Problem">
+                <h2>Traveling Salesman</h2>
+            </div>
+            <div class="game-tile" onclick="startGame('tower_of_hanoi')">
+                <img src="images/tower-of-hanoi.jpg" alt="Tower of Hanoi">
+                <h2>Tower of Hanoi</h2>
+            </div>
+            <div class="game-tile game-tile-bottom" onclick="startGame('eight_queens')">
+                <img src="images/eight-queens.jpg" alt="Eight Queens">
+                <h2>Eight Queens</h2>
+            </div>
+            <div class="game-tile game-tile-bottom" onclick="startGame('knight_problem')">
+                <img src="images/knight-tour.jpg" alt="Knight's Tour Problem">
+                <h2>Knight's Tour</h2>
+            </div>
+        </div>
+    </div>
+
+    <script>
+// This script prevents the loading effect from persisting after navigating back
+window.addEventListener('pageshow', function(event) {
+    // Check if the page is being shown from the browser cache (like when using back button)
+    if (event.persisted) {
+        // Remove loading class immediately
+        document.body.classList.remove('loading');
+    }
+});
+</script>
+<script src="home_assets/script.js"></script>
+</body>
+</html>
