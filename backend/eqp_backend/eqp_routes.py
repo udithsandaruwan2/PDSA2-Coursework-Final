@@ -191,7 +191,7 @@ def submit_solution():
         solver = get_solver()
         if not solver.validate_board(board):
             logger.error("Board validation failed")
-            return jsonify({'success': False, 'message': 'Invalid solution: Queens are not placed correctly.'}), 400
+            return jsonify({'success': False, 'message': 'Oops, try again! The queens are not placed correctly (check for conflicts).'}), 400
 
         board_string = ''.join(''.join(map(str, row)) for row in board)
         logger.debug(f"Submitted board string: {board_string}")
@@ -201,7 +201,7 @@ def submit_solution():
             logger.error(f"Solution not in precomputed solutions: {board_string}")
             return jsonify({
                 'success': False,
-                'message': 'Invalid solution: Not one of the 92 precomputed solutions.'
+                'message': 'Oops, try again! This is not a valid Eight Queens solution.'
             }), 400
 
         existing_submissions = db.execute_query(

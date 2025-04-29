@@ -7,11 +7,10 @@ document.addEventListener('DOMContentLoaded', function () {
             this.progressFill = document.getElementById('progressFill');
             this.usernameInput = document.getElementById('username');
             this.roundsInput = document.getElementById('roundsInput');
-            this.resultsDiv = document.getElementById('results');
+            this.messagesDiv = document.getElementById('messages');
 
-            // Check if required elements exist (i.e., we're on eight_queens.html)
-            if (!this.board || !this.queenCounter || !this.solutionCounter || !this.progressFill || !this.resultsDiv) {
-                console.warn('Required DOM elements not found. QueensGame not initialized (likely not on eight_queens.html).');
+            if (!this.board || !this.queenCounter || !this.solutionCounter || !this.progressFill || !this.messagesDiv) {
+                console.warn('Required DOM elements not found. QueensGame not initialized.');
                 return;
             }
 
@@ -25,8 +24,15 @@ document.addEventListener('DOMContentLoaded', function () {
             this.fetchPerformanceMetrics();
         }
 
+        showMessage(content, type) {
+            this.messagesDiv.innerHTML = `<p class="${type}">${content}</p>`;
+            this.messagesDiv.classList.remove('pulse');
+            void this.messagesDiv.offsetWidth; // Trigger reflow
+            this.messagesDiv.classList.add('pulse');
+        }
+
         initializeBoard() {
-            console.log('Initializing the board...');
+            console.debug('Initializing the board...');
             this.board.innerHTML = '';
             let squareCount = 0;
             for (let row = 0; row < 8; row++) {
@@ -56,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     this.queensPlaced++;
                     this.updateHints();
                 } else {
-                    this.resultsDiv.innerHTML = '<p class="error">You can only place 8 queens.</p>';
+                    this.showMessage('You can only place 8 queens.', 'error');
                 }
             } else {
                 square.classList.remove('has-queen');
@@ -68,8 +74,8 @@ document.addEventListener('DOMContentLoaded', function () {
             if (this.queenCounter) {
                 this.queenCounter.textContent = this.queensPlaced;
             }
-            console.log('Current board state:', this.boardState);
-            console.log('Queens placed:', this.queensPlaced);
+            console.debug('Current board state:', this.boardState);
+            console.debug('Queens placed:', this.queensPlaced);
         }
 
         updateHints() {
@@ -117,11 +123,11 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             if (conflicts.size > 0) {
-                this.resultsDiv.innerHTML = '<p class="error">Some queens are threatening each other!</p>';
+                this.showMessage('Some queens are threatening each other!', 'error');
             } else if (this.queensPlaced > 0) {
-                this.resultsDiv.innerHTML = '<p style="color: green;">No conflicts detected. Keep going!</p>';
+                this.showMessage('No conflicts detected. Keep going!', 'success');
             } else {
-                this.resultsDiv.innerHTML = '';
+                this.messagesDiv.innerHTML = '';
             }
         }
 
@@ -151,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 this.queenCounter.textContent = '0';
             }
             this.initializeBoard();
-            this.resultsDiv.innerHTML = '';
+            this.messagesDiv.innerHTML = '';
             if (this.chartInstance) {
                 this.chartInstance.destroy();
                 this.chartInstance = null;
@@ -181,10 +187,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         viewStats() {
             try {
-                window.open('eqp_assets/perfomance_stats.html', '_blank');
+                window.open('eqp_assets/performance_stats.html', '_blank');
             } catch (error) {
                 console.error('Error opening performance stats page:', error);
-                this.resultsDiv.innerHTML = `<p class="error">Error: Unable to open performance stats page.</p>`;
+                this.showMessage('Error: Unable to open performance stats page.', 'error');
             }
         }
 
@@ -192,11 +198,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const computeBtn = document.getElementById('computeBtn');
             const rounds = parseInt(this.roundsInput?.value) || 1;
             if (rounds < 1) {
-                this.resultsDiv.innerHTML = '<p class="error">Please enter a positive number of rounds.</p>';
+                this.showMessage('Please enter a positive number of rounds.', 'error');
                 return;
             }
             if (computeBtn) computeBtn.disabled = true;
-            this.resultsDiv.innerHTML = `<p>Computing ${rounds} round(s) of solutions...</p>`;
+            this.showMessage(`Computing ${rounds} round(s) of solutions...`, 'warning');
 
             try {
                 const response = await fetch('http://localhost:5000/api/eight_queens/compute_solutions', {
@@ -206,7 +212,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
                 const data = await response.json();
                 if (data.success) {
-                    this.resultsDiv.innerHTML = `<p style="color: green;">Computed ${rounds} round(s) successfully!</p>`;
+                    this.showMessage(`Computed ${rounds} round(s) successfully!`, 'success');
                     this.fetchPerformanceMetrics();
                     this.fetchSolutions();
                     if (this.chartInstance) {
@@ -214,11 +220,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         this.chartInstance = null;
                     }
                 } else {
-                    this.resultsDiv.innerHTML = `<p class="error">Error: ${data.message || 'Error computing solutions.'}</p>`;
+                    this.showMessage(`Error: ${data.message || 'Error computing solutions.'}`, 'error');
                 }
             } catch (error) {
                 console.error('Error computing solutions:', error);
-                this.resultsDiv.innerHTML = `<p class="error">An error occurred while computing solutions: ${error.message}</p>`;
+                this.showMessage(`An error occurred while computing solutions: ${error.message}`, 'error');
             } finally {
                 if (computeBtn) computeBtn.disabled = false;
             }
@@ -226,14 +232,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
         async validateSolution() {
             const username = this.usernameInput?.value.trim();
-            this.resultsDiv.innerHTML = '';
+            this.messagesDiv.innerHTML = '';
 
             if (!username) {
-                this.resultsDiv.innerHTML = '<p class="error">Please enter your username.</p>';
+                this.showMessage('Please enter your username.', 'error');
                 return;
             }
             if (this.queensPlaced !== 8) {
-                this.resultsDiv.innerHTML = '<p class="error">Please place exactly 8 queens.</p>';
+                this.showMessage('Please place exactly 8 queens.', 'error');
                 return;
             }
 
@@ -243,13 +249,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, board: this.boardState })
                 });
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
                 const data = await response.json();
 
+                if (!response.ok) {
+                    this.showMessage(`${data.message || 'Failed to submit solution. Please try again.'}`, 'error');
+                    console.warn('Error validating solution:', data.message, 'Status:', response.status);
+                    return;
+                }
+
                 if (data.message.includes('Game reset')) {
-                    this.resultsDiv.innerHTML = `<p style="color: green;">${data.message}</p>`;
+                    this.showMessage(`${data.message}`, 'success');
                     const validateBtn = document.getElementById('validateBtn');
                     if (validateBtn) validateBtn.disabled = false;
                     this.fetchSolutions();
@@ -262,16 +271,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     const hint = emptyRows.length > 0
                         ? `Try placing a queen in row ${emptyRows[0]}.`
                         : 'Try a different configuration.';
-                    this.resultsDiv.innerHTML = `<p style="color: orange;">${data.message} ${hint}</p>`;
+                    this.showMessage(`${data.message} ${hint}`, 'warning');
                 } else if (data.success) {
-                    this.resultsDiv.innerHTML = `<p style="color: green;">${data.message} (${data.unique_solutions}/92 unique solutions found)</p>`;
+                    this.showMessage(`${data.message} (${data.unique_solutions}/92 unique solutions found)`, 'success');
                     this.fetchSolutions();
                 } else {
-                    this.resultsDiv.innerHTML = `<p class="error">Error: ${data.message}</p>`;
+                    this.showMessage(`Error: ${data.message}`, 'error');
                 }
             } catch (error) {
                 console.error('Error validating solution:', error);
-                this.resultsDiv.innerHTML = `<p class="error">Failed to submit solution: ${error.message}</p>`;
+                this.showMessage('Failed to submit solution. Please try again.', 'error');
             }
         }
 
@@ -280,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const response = await fetch('http://localhost:5000/api/eight_queens/get_solutions');
                 const data = await response.json();
 
-                console.log('Solutions data:', data);
+                console.debug('Solutions data:', data);
 
                 const leaderboardList = document.getElementById('leaderboardList');
                 if (leaderboardList) {
@@ -334,6 +343,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             } catch (error) {
                 console.error('Error fetching solutions:', error);
+                this.showMessage('Failed to load leaderboard.', 'error');
             }
         }
 
@@ -342,12 +352,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 const response = await fetch('http://localhost:5000/api/eight_queens/get_performance');
                 const data = await response.json();
 
-                console.log('Performance metrics:', data);
+                console.debug('Performance metrics:', data);
 
                 const metricsDiv = document.getElementById('performanceMetrics');
                 if (!metricsDiv) return;
 
-                metricsDiv.innerHTML = '';
+                metricsDiv.innerHTML = '<h2>Performance Metrics</h2>';
 
                 if (data.success && data.performance_metrics && data.performance_metrics.length > 0) {
                     data.performance_metrics.slice(0, 10).forEach(metric => {
@@ -362,14 +372,15 @@ document.addEventListener('DOMContentLoaded', function () {
                         metricsDiv.appendChild(p);
                     });
                 } else {
-                    metricsDiv.innerHTML = '<p>No performance metrics available.</p>';
+                    metricsDiv.innerHTML += '<p>No performance metrics available.</p>';
                 }
             } catch (error) {
                 console.error('Error fetching performance metrics:', error);
                 const metricsDiv = document.getElementById('performanceMetrics');
                 if (metricsDiv) {
-                    metricsDiv.innerHTML = '<p class="error">Error loading performance metrics.</p>';
+                    metricsDiv.innerHTML = '<h2>Performance Metrics</h2><p class="error">Error loading performance metrics.</p>';
                 }
+                this.showMessage('Failed to load performance metrics.', 'error');
             }
         }
 
@@ -434,6 +445,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     dbContentsDiv.appendChild(performanceCard);
                 } else {
                     dbContentsDiv.innerHTML = `<p class="error">Error: ${data.message || 'Failed to load database data.'}</p>`;
+                    this.showMessage('Failed to load database contents.', 'error');
                 }
             } catch (error) {
                 console.error('Error fetching database data:', error);
@@ -441,11 +453,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (dbContentsDiv) {
                     dbContentsDiv.innerHTML = '<p class="error">An error occurred while fetching database data.</p>';
                 }
+                this.showMessage('Failed to load database contents.', 'error');
             }
         }
     }
 
-    // Initialize QueensGame only if on eight_queens.html
     if (document.getElementById('board')) {
         const game = new QueensGame();
     } else {

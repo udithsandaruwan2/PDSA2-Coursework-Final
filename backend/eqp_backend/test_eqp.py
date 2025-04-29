@@ -234,7 +234,7 @@ class EightQueensAPITestCase(unittest.TestCase):
             self.assertEqual(solutions, 92)
         for solutions in data['parallel_solutions']:
             self.assertEqual(solutions, 92)
-        print F"✓ /api/eight_queens/run_algorithm_rounds works with specified rounds.")
+        print("✓ /api/eight_queens/run_algorithm_rounds works with specified rounds.")
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

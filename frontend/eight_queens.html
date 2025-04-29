@@ -14,6 +14,12 @@
         </header>
 
         <div class="game-layout">
+            <div class="left-panel">
+                <div id="messages" class="message-wrapper"></div>
+                <h2>Leaderboard</h2>
+                <ul id="leaderboardList"></ul>
+            </div>
+
             <div class="center-panel">
                 <div id="board" class="chessboard" role="grid" aria-label="8x8 chessboard for placing queens"></div>
                 <p>Queens Placed: <span id="queenCount">0</span></p>
@@ -21,9 +27,6 @@
                     <p>Unique Solutions: <span id="solutionCount">0</span>/92</p>
                     <div id="progressBar"><div id="progressFill"></div></div>
                 </div>
-            </div>
-
-            <div class="right-panel">
                 <section class="rules">
                     <h2>Rules</h2>
                     <ul>
@@ -34,36 +37,33 @@
                     </ul>
                 </section>
             </div>
+
+            <div class="right-panel">
+                <div id="controls">
+                    <div class="input-group">
+                        <label for="username">Username:</label>
+                        <input type="text" id="username" placeholder="Enter your username" aria-label="Enter your username">
+                    </div>
+                    <button id="validateBtn" aria-label="Submit your Eight Queens solution">Submit Solution</button>
+                    <button id="undoBtn" aria-label="Undo last queen placement">Undo Move</button>
+                    <button id="resetBtn" aria-label="Reset the chessboard">Reset Board</button>
+                    <div class="input-group">
+                        <label for="roundsInput">Rounds:</label>
+                        <input type="number" id="roundsInput" min="1" value="1" placeholder="Enter number of rounds" aria-label="Enter number of rounds">
+                    </div>
+                    <button id="computeBtn" aria-label="Compute all Eight Queens solutions">Compute Solutions</button>
+                    <button id="viewStatsBtn" aria-label="View performance statistics">View Performance Stats</button>
+                    <button id="viewPlayerStatsBtn" aria-label="View player statistics">View Player Stats</button>
+                    <button id="viewDbBtn" aria-label="View database contents">View Database</button>
+                </div>
+            </div>
         </div>
 
-        <div id="controls">
-            <div>
-                <label for="username">Username:</label>
-                <input type="text" id="username" placeholder="Enter your username" aria-label="Enter your username">
-            </div>
-            <button id="validateBtn" aria-label="Submit your Eight Queens solution">Submit Solution</button>
-            <button id="undoBtn" aria-label="Undo last queen placement">Undo Move</button>
-            <button id="resetBtn" aria-label="Reset the chessboard">Reset Board</button>
-            <button id="viewDbBtn" aria-label="View database contents">View Database</button>
-            <div>
-                <label for="roundsInput">Rounds:</label>
-                <input type="number" id="roundsInput" min="1" value="1" placeholder="Enter number of rounds" aria-label="Enter number of rounds">
-            </div>
-            <button id="computeBtn" aria-label="Compute all Eight Queens solutions">Compute Solutions</button>
-            <button id="viewStatsBtn" aria-label="View performance statistics">View Performance Stats</button>
-            <button id="viewPlayerStatsBtn" aria-label="View player statistics">View Player Stats</button>
-        </div>
-
-        <div id="results"></div>
-
-        <div class="results">
-            <h2>Leaderboard</h2>
-            <ul id="leaderboardList"></ul>
-            <h2>Performance Metrics</h2>
+        <div id="performance-section">
             <div id="performanceMetrics"></div>
-            <h2>Database Contents</h2>
-            <div id="databaseContents"></div>
         </div>
+
+        <div id="databaseContents" class="database-section"></div>
 
         <footer>
             <p>Developed by Team</p>
