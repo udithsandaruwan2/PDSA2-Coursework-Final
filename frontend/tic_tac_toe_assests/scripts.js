@@ -117,21 +117,8 @@ function showModal(message) {
     }, 5000);
 }
 
-// Reset the game
 async function resetGame() {
-    const response = await fetch("/tic_tac_toe/reset", {
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId })
-    });
-
-    const data = await response.json();
-    console.log(data);
-
-    drawBoard(Array(5).fill().map(() => Array(5).fill(0)));
-    document.getElementById("startButton").style.display = "inline";
-    document.getElementById("resetButton").style.display = "none";
-    document.getElementById("statusMessage").textContent = "";
+    location.reload();
 }
 
 // Disable board interaction
