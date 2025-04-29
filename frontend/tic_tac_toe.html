@@ -60,7 +60,7 @@
             margin-top: 20px;
         }
 
-        #game-buttons button {
+        #game-buttons button, a {
             margin: 8px;
             padding: 12px 24px;
             font-size: 16px;
@@ -74,13 +74,13 @@
             box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
         }
 
-        #game-buttons button:hover {
+        #game-buttons button:hover, a:hover {
             background-color: #0056b3;
             transform: translateY(-1px);
             box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
         }
 
-        #game-buttons button:active {
+        #game-buttons button:active, a:active {
             transform: translateY(1px);
             box-shadow: none;
         }
@@ -119,11 +119,33 @@
             margin: 0 auto;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
+        /* Rules Card */
+        .rules-card {
+            background-color: #fff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 600px;
+            text-align: left;
+        }
+
+        .rules-card h3 {
+            margin-top: 0;
+            color: #007BFF;
+        }
+
+        .rules-card ul {
+            list-style-type: disc;
+            margin-left: 20px;
+            padding-left: 0;
+        }
+
     </style>
 </head>
 
 <body>
-    <h2>5x5 Tic-Tac-Toe</h2>
+    <h2>Tic-Tac-Toe (5 x 5) </h2>
 
     <!-- Player Name Input -->
     <div>
@@ -150,10 +172,29 @@
     <table id="board"></table>
 
     <div id="statusMessage" style="text-align:center; margin: 10px; font-weight: bold;"></div>
+    <div id="game-buttons">
+        <a href="http://127.0.0.1:5000/tic_tac_toe/view-database" 
+           style="display: inline-block; text-decoration: none; color: white; background-color: rgb(255, 0, 0); padding: 10px; margin-right: 10px;">View Database</a>
+    
+        <a href="http://127.0.0.1:5000/tic_tac_toe/performance" 
+           style="display: inline-block; text-decoration: none; color: white; background-color: green; padding: 10px;">Time Comparison</a>
+    </div>
+     <!-- Game Rules Card -->
+      <div class="container">
+        <div class="rules-card">
+        <h3>Game Rules</h3>
+        <ul >
+            <li>Players alternate placing O and X on the 5×5 board.</li>
+            <li>Player O always starts first.</li>
+            <li>The goal is to get 5 of your marks in a row — horizontally, vertically, or diagonally.</li>
+            <li>If the board fills without 5 in a row, the game ends in a draw.</li>
+            <li>Select your AI algorithm before starting: Minimax or MCTS.</li>
+        </ul>
+    </div>
+      </div>
 
-
-    <a href="http://127.0.0.1:5000/tic_tac_toe/view-database">View Database </a> <br>
-    <a href="http://127.0.0.1:5000/tic_tac_toe/performance"> Time Comparison</a>
+     
+    
 
     <script src="tic_tac_toe_assests/scripts.js"></script>
 
